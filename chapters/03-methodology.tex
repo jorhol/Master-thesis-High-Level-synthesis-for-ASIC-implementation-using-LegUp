@@ -1,0 +1,219 @@
+\chapter{Methodology}
+
+\section{LegUp classes}
+LegUp has some predefined classes that is important for the understanding of the following description of how the issues in LegUp are resolved. The following subsections will describe these classes in more detail.
+\subsection{RTLModule}
+
+\subsection{RTLSignal}
+
+\subsection{RTLOp}
+
+\subsection{RTLWidth}
+
+\section{TCL commands}
+LegUp uses TCL commands for setting constraints and configure the HLS process. In order to not clutter the original implementation, and to provide additional functionality to LegUp, some new commands were created. New TCL-parameters can easily be added to LegUp by adding the parameter name to the array \textit{validParameters} and increasing the parameter \textit{NUM\_PARAMETERS} in the file \textit{LegupConfig.cpp}. The value of the parameter can then be read using the function call \textit{LEGUP\_CONFIG->getParameterInt("\%parameterName\%")} (LegupConfig.h must be included to get access to LEGUP\_CONFIG). The most common use of TCL-parameters are to check if a parameter is set, and perform some action if it is. an example could be:
+\begin{verbatim}
+  if(LEGUP_CONFIG->getParameterInt("PRINTTOPMODULE") {
+    printTop();
+  } else {
+    printModuleWithoutTop();
+  }
+\end{verbatim}
+
+
+Other TCL-commands can also be defined by adding 
+\begin{verbatim}
+  Tcl_CreateCommand(interp,
+                    "set_custom_main_function",
+                    set_custom_main_function,
+                    legupConfig,
+                    0);
+\end{verbatim}
+Where the second parameter is the TCL-command and the third parameter is the handler function that will be called when the TCL-command is encountered.
+
+\subsection{ASIC\_IMPLEMENTATION}
+This parameter is used to 
+
+
+
+\subsection{set\_custom\_main\_function}
+This parameter can be used to define inputs and outputs in the main module. 
+\subsection{ENCLOSING\_WHILE\_LOOP}
+Main-function has enclosing while loop (for streaming inputs/outputs). Will generate \textit{iterationFinish}-signal when iteration of while loop is finished,
+\subsection{SEPARATE\_TB\_FILE}
+Parameter decides if testbench is printed in same or a separate file. The filename of the separate testbench-file will be test\_main.v, according to Nordic's naming standard, but this can easily be changed or made dynamic by setting the constraint \textit{set\_custom\_testbench\_filename}.
+\subsection{SEPARATE\_TB\_FILENAME}
+Takes testbench file name as parameter and outputs testbench to a file with this name. Will not work if \textit{SEPARATE\_TB\_FILE} is not set. Default is \textit{test\_main.v}
+\subsection{TB\_TESTCASE\_FILE}
+Parameter sets filename of file containg testcases for the testbench. If the parameter is not set, no testcases will be added to the testbench
+\section{LLVM IR assignment parser script}
+Each function declared in a C program will be translated into a Verilog-module by LegUp. Since LegUp primarily is designed for implementing hardware accelerators for FPGAs, it does not handle inputs and outputs well to and from the top module. In an ASIC implementation, inputs and outputs are essential to most module design and must therefore be easy to implement.
+
+\subsection{Removing memory controller}
+
+\subsection{Declaring inputs and outputs}
+In a C program written for execution on a computer the input parameters to the main function is defined to be on the form "int main(int argc, char *argv[])". This limits the possibility to declare inputs to the module with the data-type you want. To solve this problem, the flag \textit{-ffreestanding} has to be passed to the clang compiler frontend of LLVM. The compiler will then consider the C-code to contain a freestanding - not a hosted - environment, and therefore not care about what types of inputs and return values the \textit{main}-function has. In LegUp, the flag is set in the file \textit{Makefile.config} by adding it to the variable \textit{CLANG\_FLAG}.
+
+The solution that would have been used in a hosted environment is to use pointers as input and output values as pass-by-reference.
+
+Two different solutions for declaring inputs and outputs are considered and implemented. Both solutions are based on declaring both inputs and outputs as parameters to the main function.
+\subsubsection{Name prefix}
+The first solution is to use a prefix to distinguish between input and output parameters. To use a prefix that is seldom used in a variable name, the prefix is set to \textit{\_\_out\_}. Previously, LegUp assumed all function parameters were inputs, and added the signals to the RTLModule. This has been altered to check the name of the parameter and add it as an output reg if the name starts with \textit{\_\_out\_} or otherwise, add it as an input.
+
+\begin{verbatim}
+    std::string sigName = i->getName();
+    if (sigName.find("__out_") == 0) {
+        sigName = sigName.substr(6, std::string::npos);
+        i->setName(sigName);
+        rtl->addOutReg(verilogName(i), RTLWidth(i->getType()));
+        string validSigName = "arg_" + sigName + "_valid";
+        rtl->addOutReg(validSigName);
+    } else {
+       rtl->addIn(verilogName(i), RTLWidth(i->getType())); 
+    }
+\end{verbatim}
+The advantage of this method is that it is easy to implement and easy to use, as the user only has to remember the name prefix when writing the functional specification. The name-prefix can also be useful in other sections of the program, as we will see later in section \ref{sec:assValueToOutput}. The disadvantage is that the name prefix needs to be used throughout the program. It would however be preferable to use a temporary variable in the program until the final value is calculated and ready to be assigned to the output. This will reduce the amount of times the name-prefix must be used.
+\subsubsection{TCL-command}
+The other alternative is to declare in a TCL-command if each parameter is input or output. This also makes it possible to declare the size of the signal, but LegUp does not allow setting the size of the signals to a size lower than the size of what will be assigned to the signal.
+
+The TCL-command \textit{set\_custom\_main\_function} described above, creates a vector with objects of the class CustomVerilogIO, each containing one input or output signal to the main module. The parameters can then be added as input or output to the RTLModule based on this information.
+\begin{verbatim}
+    std::vector<CustomVerilogIO> cmIO = LEGUP_CONFIG->getCustomMainIO();
+    for (std::vector<CustomVerilogIO>::iterator it = cmIO.begin();
+         it != cmIO.end(); ++it) {
+
+        CustomVerilogIO &cmIO = *it;
+
+        if (cmIO.isInput && (cmIO.name == i->getName().str())) {
+            rtl->addIn(verilogName(i),
+                       RTLWidth(cmIO.bitFrom, cmIO.bitTo));
+        } else if (cmIO.name == i->getName().str()) {
+            rtl->addOutReg(verilogName(i),
+                           RTLWidth(cmIO.bitFrom, cmIO.bitTo));
+        }
+    }
+\end{verbatim}
+
+\subsection{\label{sec:assValueToOutput}Assigning values to outputs}
+
+\subsection{Streaming inputs/outputs}
+For most module designs to be useful, fast and , it must be able to continuously take new inputs and generate outputs, without having to start and stop the entire module each time, with all the overhead in time this would require. The way LegUp is designed, functions are used as hardware accelerators, meaning it gets some input, performs some calculations and the outputs the result. The module is then finished and will not run again until next time the accelerated function is called. For this approach to work for an ASIC implementation, a top module would need to be created to assign new inputs and start the module again once it is finished with the last iteration. This would create a lot of unwanted overhead, both in size and speed. A better solution would therefore be to add a while loop inside the main function of the C program to make the program run continuously.
+
+\lstset{language=C,style=Cstyle}
+\begin{lstlisting}[caption={FIR-filter implemented in C},label=lst:firfilterc]
+void main( int done ) {
+  // Variable setup etc. can be done here.
+  while(done == 0) {
+    // Module operations are performed here
+  }
+  // No operations can be done here.
+  return;
+}
+\end{lstlisting}
+
+\subsection{Testbench generation}
+LegUp did generate a basic testbench shell, but this were very static and incorporated into the same file as the module design, making it impractical to use in Nordic's toolflow. The generated testbench consisted of a testbench module, main\_tb, which instantiate the top module, \textit{top}, and sets reset, start and waitrequest flags. The input and output signals in the top module does not contain custom signals from the main module, and in an ASIC implementation we are not interested in the memory controller and additional modules declared/instantiated in the top module. The solution then, became to instantiate the main module instead and add each input or output by iterating over the ports in the main module.
+
+\begin{verbatim}
+RTLModule *t = m->addModule("main", "main_inst");
+if (LEGUP_CONFIG->getParameterInt("ASIC_IMPLEMENTATION")) {
+    RTLModule *rtl = alloc->getModuleForFunction(
+        alloc->getModule()->getFunction("main"));
+    if (rtl->getName().compare("main") == 0) {
+        for (RTLModule::const_signal_iterator i = rtl->port_begin(),
+                                              e = rtl->port_end();
+             i != e; ++i) {
+            const RTLSignal *s = *i;
+            RTLSignal *d;
+            string type = s->getType();
+            if (!type.empty()) {
+                if (type.compare(0, 6, "output") == 0) {
+                    d = m->addWire(s->getName(), s->getWidth());
+                    t->addOut(s->getName(), s->getWidth())->connect(d);
+                } else {
+                    d = m->addReg(s->getName(), s->getWidth());
+                    t->addIn(s->getName(), s->getWidth())->connect(d);
+                }
+            }
+        }
+    }
+}
+\end{verbatim}
+
+As the testbench does not come with any form of testcases or applied signals, the testbench generater is extended to input Verilog code from a file specified by the TCL-parameter \textit{TB\_TESTCASE\_FILE}. This allows the user to specify testcases in this file, and it will automatically be inserted into the testbench file inside the testbench module. The code will be placed inside the module, but not inside any procedural blocks. This allows the user to add the preferred procedural block in the specified testcase file. An example testcase file can then be:
+
+\lstset{language=Verilog, style=Verilogstyle}
+\begin{lstlisting}
+always @(iterationFinish) begin
+  if (iterationFinish == 1) begin
+    $display("At t=%t, Loop iteration finished", $time);
+  end
+end
+\end{lstlisting}
+or
+\begin{lstlisting}
+initial begin
+    inData <= 100;
+    @(posedge clk)
+    inData <= 0;
+    @(posedge clk);
+    $display("At t=%t, outData=%d", $time, outData);
+end
+\end{lstlisting}
+This automatic insertion of testcases, enables the script to first run HLS and then run simulation on the generated design and testbench.
+\section{HLS-script}
+In order to automatically run HLS, simulation, synthesis and power-estimation, a script is created. Since LegUp is running on a VirtualBox image and not on the same servers where the other tools are located, some files and commands needs to be transferred between different locations. In the project \cite{holm2015pro} a possible solution using SSH and SCP were proposed. The script will build on this method, but first some additional preparations needs to be made. Since the VirtualBox guest is running on a local computer, a port forwarding rule has to be added to allow connections to port 22 of the guest from the Nordic Linux servers. The connections has to go through the host computer, as the VirtualBox guest does not have any direct connection to the network. The setting can either be set using the GUI of VirtualBox, or by running the following command from a command line:
+\begin{verbatim}
+  VBoxManage modifyvm myserver --natpf1 "ssh,tcp,,3022,,22"  
+\end{verbatim}
+Here "myserver" is the name of the VirtualBox VM and should be replaced with whatever you called the VM when you created it in VirtualBox. Whene this setting is set, it is possible to establish a connection over SSH from the Linux server directly to LegUp by using the port 3022 and the local IP-address of the computer running VirtualBox.
+\lstset{language=[gnu] make, style=Cstyle}
+
+The script is written for the bash-shell.
+\begin{lstlisting}
+#!/bin/bash
+
+DESIGNNAME=sra
+REMOTEIP=192.168.12.33 # IP of the computer running the LegUp VirtualBox guest
+REMOTEPORT=3022 # Port that is forwarded to port 22 on VirtualBox guest
+REMOTEDIR=/home/legup/legup-4.0/examples
+LEGUPUSER=legup # Username of LegUp image
+LEGUPPASS=letmein # Password of LegUp image
+CONSTRAINTFILE=config # Name of constraints-file
+LOCALDIR=/pri/joh2/ProjectH15/sra/ip/sra #Location of source files on Linux server.
+SSHCOMMANDS="export PATH=/home/legup/clang+llvm-3.5.0-x86_64-linux-gnu/bin:$PATH; cd $REMOTEDIR/$DESIGNNAME/; make; exit" # Commands to run on SSH session. Need to add clang to PATH as this is not preset in SSH session .
+
+if [$1 = "-setup"]; then
+	echo Setup started
+	ssh-keygen -f id_rsa -t rsa -N ''
+	spawn ssh-copy-id "$LEGUPUSER@$REMOTEIP -p $REMOTEPORT"
+	expect "password:"
+	send "$LEGUPPASS\n"
+	expect eof
+	echo Setup finished
+fi
+
+mkdir -p $LOCALDIR/hls/
+scp -P $REMOTEPORT $LOCALDIR/$DESIGNNAME.c $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME #Copy design file to LegUp image
+scp -P $REMOTEPORT $LOCALDIR/Makefile $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/
+COUNTER=0
+while [  $COUNTER -lt 1 ]; do
+	#####################################################
+	#Here we need to alter the constraints-file for LegUp
+	#####################################################
+	scp -P $REMOTEPORT config.tcl $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/ #Copy design constraint file to LegUp image
+	ssh $LEGUPUSER@$REMOTEIP -p $REMOTEPORT $SSHCOMMANDS
+	scp -P $REMOTEPORT $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/$DESIGNNAME.v $LOCALDIR/rtl/ #Copy Verilog file from LegUp image
+	scp -P $REMOTEPORT $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/test_main.v $LOCALDIR/sim/tb/ #Copy Verilog testbench file from LegUp image
+	$LOCALDIR/sim/run/rtl/RUN_ALL #Run simulation
+	(cd $LOCALDIR/syn/ && (make compile -B)) #Run synthesis -B forces rebuild all targets
+	mkdir -p $LOCALDIR/hls/rtl$COUNTER/
+	cp -r $LOCALDIR/{rtl/,sim/,syn/} $LOCALDIR/hls/rtl$COUNTER/
+	let COUNTER=COUNTER+1 
+done
+echo HLS finished
+#######################################################
+#Here we need to information from HLS and do comparison
+#######################################################
+exit $?
+\end{lstlisting}

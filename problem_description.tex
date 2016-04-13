@@ -1,0 +1,35 @@
+\begin{titlingpage}
+
+\noindent
+\begin{tabular}{@{}p{4cm}p{8cm}}
+\textbf{Title:} 	& \thetitle \\
+\textbf{Student:}	& \theauthor \\
+\end{tabular}
+
+\vspace{2ex}
+\noindent\textbf{Problem description:}
+\vspace{1ex}
+
+Architectural exploration is a long and complex process where a number of hardware architectures are built and evaluated based on minimum performance requirements and worst-case operational scenarios. With this method, satisfactory results can be achieved if a diverse number of candidates are produced. However, the number of architectures to be evaluated is limited by time and engineering resources. In this context, High Level Synthesis (HLS) is a compelling alternative to shorten the development time, and consequently, increasing the number of architectures that can be evaluated during the exploration.
+Furthermore, by automating the entire architecture exploration process, the optimization engine can take advantage of the higher level of abstraction and generate far more and diverse architectures than it would be possible by parametrized RTL.
+
+The goal of this project-thesis is to set an initial HLS framework in accordance to Nordic Semiconductor's RTL coding policies. This would ensure minimum overhead when integrating to other existing Nordic modules.
+
+There are currently several implementations of HLS by both industry and academia. For this project, LegUp is chosen as the implementation to be used and adapted to our needs. LegUp is open source and has a level of maturity not yet seen in other academic implementations.
+
+Among the goals of this projects are:
+\begin{compactitem}
+\item Get intimate knowledge of the LegUp libraries that are needed to translate C code to RTL.
+\item Integrate Nordic's coding style and practices into LegUp Verilog libraries, i.e., interfaces, parameters, naming conventions, power/clock domains, etc.
+\item Create scripts to automate simulation, synthesis, and power dissipation extraction
+\item Create an architectural exploration proof of concept, where a simple design is coded in C and a number of architectures are generated and evaluated in terms of performance, number of gates, and energy consumption.
+\end{compactitem}
+\vspace{2ex}
+
+\noindent
+\begin{tabular}{@{}p{4cm}l}
+\textbf{Responsible professor:} 	& \theprofessor \\
+\textbf{Supervisor:}			& \thesupervisor \\
+\end{tabular}
+
+\end{titlingpage}

@@ -1,0 +1,86 @@
+\chapter{Results and discussions}
+\label{chp:resdisc}
+This chapter will present and discuss achieved results and problems encountered throughout the work with the thesis. Due to the encountered problems, no synthesis or comparison of results from the reference designs have been done, and will therefore not be presented. This should however be easy to perform when the described problems are solved. Some potential solutions to the problems will be presented in \cref{sec:futurework}.
+\section{HLS output from LegUp}
+\label{sec:legupoutput}
+As a quick introduction to how the output from LegUp looks, we will have a look at a simple example. Since the code output is very large, it will be of more use to look at a figure describing the different parts of the code and how it is connected. Beware that this section describes output from LegUp after a fresh installation, without any alterations or changes to settings. In general, the modules declared in the output Verilog file are these:
+\begin{compactdesc}
+    \item[top]Top-level module. Instantiates \textit{main}- and \textit{memory\_controller}-modules.
+    \item[main]\textit{Main}-function from C project. Contains the \gls{fsm} that handles all functionality from the input C program.
+    \item[ram\_dual\_port] Dual port RAM module used inside memory controller for global memories.
+    \item[rom\_dual\_port] Dual port ROM module used inside memory controller for global memories.
+    \item[memory\_controller]Contain global memories and logic for reading and writing to memory. Instantiates necessary \textit{ram\_dual\_port} and \textit{rom\_dual\_port} modules.
+    \item[circuit\_start\_control]FPGA specific module. 
+    \item[hex\_digits]FPGA specific module. Controls hex LEDs for visualization of results.
+    \item[\%board\%]FPGA specific top module. Instantiates top-module and 8 hex{\textunderscore}digits modules and connects return\_value from top to hex modules for visualizing the results.
+    \item[main\_tb]Basic testbench that can be used for simulation. Instantiates top-module. Testbench code generates \textit{clk} signal and applies \textit{reset} and \textit{start} signals to the module before waiting for finish flag. There are no additional input stimuli, so this needs to be added manually by the user.
+\end{compactdesc}
+
+\noindent
+Listing \ref{lst:exampleCProgram} shows a simple C implementation of a square-root approximation method. The reason that the arguments to the \textit{main}-function are given in this way, is described in \cref{subsec:inoutprobs}. \gls{hls} is performed by running \verb!make! in a terminal window. The output Verilog file contains over 3000 lines of code and can therefore not be presented her, it would anyway not give much information. The \gls{ir} from LLVM is shown in \cref{lst:llvmir} for reference.
+\lstset{language=C,style=Cstyle}
+\begin{lstlisting}[caption={C example: square-root approximation},label=lst:exampleCProgram]
+#define abs(a) ( ((a) < 0) ? -(a) : (a) )
+#define max( a, b ) ( ((a) > (b)) ? (a) : (b) )
+#define min( a, b ) ( ((a) < (b)) ? (a) : (b) )
+
+// square-root approximation:
+int main(int inDataA, char *inDataB[]) {
+    int x = max(abs(inDataA), abs(*inDataB[0]));
+    int y = min(abs(inDataA), abs(*inDataB[0]));
+    return max(x, x-(x>>3)+(y>>1));
+}
+\end{lstlisting}
+\noindent
+A project in Quartus can be created by running \verb!make p! and a full compilation can be executed by running \verb!make f!. Synthesis of the example in \cref{lst:exampleCProgram} generates a large netlist with many gates and signals, which is hard to read. A simplified diagram only showing the interesting signals and connections from the synthesis output, have therefore been created and can be seen in \cref{fig:legupouttop}.
+\begin{figure}[hbpt]
+\centering
+\includegraphics[width=\textwidth]{../figs/LegUpOutputTop.png}
+\caption{\label{fig:legupouttop}Top-level module of HLS-generated Verilog from LegUp synthesized in Quartus.}
+\end{figure}
+Notice that the inputs to the instantiated \textit{main} module, \textit{inDataA} and \textit{inDataB} does not propagate to the top module instantiation. Also, if we look inside the \textit{main} module, \textit{inDataB} is only mapped to the signal \textit{memory\_controller\_address}. The sky-image indicates that something happens inside the module, it is not a direct connection through, but essentially this is what happens. This is because \textit{inDataB} is declared as a pointer in the C code, meaning that the input only provides the address to a location in memory where the data can be fetched. This issue is discussed further in \cref{sec:encprob}.
+
+The signal connections between the main module and the memory controller is described in \cref{tab:hlsoutputsignals}. As the memory controller is dual-ported, two connections for each signal is used, distinguished by the suffix \textit{\_a} and \textit{\_b} for port A and port B respectively. Each memory signal starts with the prefix \textit{memory\_controller\_}.
+
+\begin{table}[hbpt]
+    \centering
+    \caption{\label{tab:hlsoutputsignals}Description of signals connecting main and memory controller module in HLS-generated Verilog.}
+    \begin{tabular}{ll}
+      \textbf{Memory signal} & \textbf{Description}\\
+      \toprule
+      address & 32-bit address of memory \\
+      \hline
+      enable & Enable signal for memory controller \\
+      \hline
+      write\_enable & Perform write-operation if high, read operation if low\\
+      \hline
+      size & Byte-enable signal (write or read single bytes)\\
+      \hline
+      in & Data input to memory (memory write operations)\\
+      \hline
+      out & Data output from memory (memory read oeprations)\\
+      \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{\label{sec:encprob}Encountered problems}
+Throughout the work with LegUp, multiple problems that limits its usefulness towards \gls{asic}-applications has been encountered. The following section will describe some of the problems and their implication for the continuation of the project.
+\subsection{\label{subsec:memctrl}Memory controller}
+In order to communicate between different modules instantiated in the top-level module of the Verilog output from LegUp, a memory controller is declared and instantiated. All variables detected as global by LegUp, i.e. variables used by multiple modules or declared as a pointer and the points-to analysis fails to determine the exact array for the pointer at compile-time, is stored in a \gls{ram} module inside this memory controller. This approach is well intended for the hybrid flow supported by LegUp, where a soft-processor works in cooperation with one or more functions implemented as hardware accelerators in an \gls{fpga}. In this flow, the data needs to be transferred between the software and hardware portion of the system. For an \gls{asic}, pure-\gls{hw} implementation however, this approach creates a lot of extra overhead and basically does not provide any additional functionality to the circuitry. In the pure-\gls{hw} flow in LegUp, all the functionality described under the \textit{main}-function in the input C code will be translated into a single \gls{fsm}. The \textit{main}-function is further the only module instantiated in the top-module of the produced Verilog, besides the memory controller. The use of the memory controller is in itself not an issue as LegUp handles all memory access automatically, but this will come at the expense of both decreased speed and increased area usage. It will also cause some problems related to input and output, as described in subsection \ref{subsec:inoutprobs}.
+
+\subsection{\label{subsec:inoutprobs}Inputs and outputs}
+The task of a hardware module can vary almost infinitely, however most modules follow the same principle; the module gets some data input together with a set of control signals, processes the data and outputs a result or response. This makes input and outputs, and the ability to configure them properly, extremely important in most module design. In the documentation of LegUp \cite{leguparch}, the developers claim that each function declared in C is translated into a corresponding module in Verilog. However, \gls{hls}-output shows that in the pure-\gls{hw} flow, the only generated module is the one containing the \textit{main}-function, as describe in subsection \ref{subsec:memctrl}. As LegUp uses a standard C compiler frontend for LLVM to compile the C code into LLVM-\gls{ir}, we need to follow the \gls{ansi}-C specification \cite{isoc} when writing our C code. In a standard programming case, the \textit{main}-function has a special purpose, specifically, the run-time environment calls this function to start execution of the program. The return value of the \textit{main}-function is defined to be an integer (int), whose purpose is to return program execution status to the invoker process. The \textit{main}-function is also defined to handle arguments input from command-line, through the input arguments \textit{int argc} and \textit{char *argv[]}, where \textit{argc} is the number of command-line arguments, and \textit{*argv} is an array of pointers to the given arguments. The implications of this is that if we want inputs and outputs to or from the module we design in out C code, we are limited to the arguments allowed through the defined \textit{main}-function in the \gls{ansi}-C specifications. This problem increase when we realize that almost any inputs or outputs have to be pointers, meaning it has to go through the above described memory controller. This causes a lot of overhead, as most input- and output-data has to be written to and read from memory, creating the need for a dedicated custom module for handling I/O. Also, returning a value in C by calling the \textit{return}-function, will terminate the program. This means that a value might not be output until the program is done. One more issue related to input signals, is that the given arguments to the \textit{main}-function in C are not propagated from the generated main module to the top-level module to make them inputs to the circuit. This means that the designer has to manually alter the generated Verilog to make the the arguments input signals, making it more difficult to create the desired automated framework.
+
+\subsection{Bus widths}
+When designing digital hardware circuits, you often want (and in some cases need) to use bit-vectors of a given size. \gls{ansi}-C does not have built-in support for data-types of other sizes than 8, 16, 32 and 64 bits, this cause problems when doing \gls{hls}. LegUp has a class, \textit{MinimizeBitwidth.cpp}, which calculate the minimum needed bits in a signal and limits the width to this size, but this does only work for internal signals, where all values assigned to the variable is known at compile-time. If the signal shall be an input or output, the maximum value of the signal is not known, and it can therefore not be limited. Having too wide signals will increase the occupied area as all components must support the extra bits. A simple example is shown in figure \ref{fig:andgate34}, where we can easily see that the addition of one extra bit to the input signal adds one extra 2-input AND gate to the circuit. Technically this is a limitation inherited from the lack of logical data-types in C, but this problem needs to be addressed if LegUp shall be used in an architectural exploration framework.
+\begin{figure}[hbpt]
+\centering
+\includegraphics[width=0.6\textwidth]{../figs/AndGate34Bit.png}
+\caption{\label{fig:andgate34}3-bit input versus 4-bit input AND-gate.}
+\end{figure}
+
+\subsection{\label{subsec:parameterprobs}Parameters}
+When designing a module, it has become more and more common to design for reuse and parametrization of sizes. The lack of support for transferring parameters from the C code into the generated Verilog makes it harder to instantiate modules based on widths or depths of different parameters. This is not a problem for the architectural exploration usage of the tool, as the final implementation will be done in a \gls{hdl}. It is possible to generate multiple modules by changing the sizes in the C code, but it would be a nice feature to support parameters if LegUp should be used to generate actual hardware. The problem with parameters in this case, is that the generated \gls{fsm} only accounts for the specified width of signals etc., when generating the necessary operation-resources in the circuit.
+
+\section{Tool-flow and script}
+One of the objectives of this thesis was to create a script, making it possible to run the entire process of \gls{hls}, synthesis, and power estimation automatically. Due to the above mentioned problems, this objective has not been fulfilled. Since the \gls{hls}-tool, LegUp, is located on a VirtualBox image, while the synthesis and power estimation tools are located on Nordic Semiconductor's servers, it is not possible to make a single tool-flow that can be run on one computer. A possible solution to create a single tool-flow can be to connect to the LegUp image and run commands remotely from Nordic's servers using the \gls{ssh}-protocol. File transfers to and from the image can be performed using the \gls{scp}, which is included in most \gls{ssh} implementations.
