@@ -1,0 +1,143 @@
+\lstdefinestyle{LLVMstyle}{
+    %keywordstyle=\ttfamily\color[rgb]{0,0,1},
+    %commentstyle=\ttfamily\color[rgb]{0.133,0.545,0.133},
+    %stringstyle=\ttfamily\color[rgb]{0.627,0.126,0.941},
+    %backgroundcolor=\color{backcolour},   
+    %numberstyle=\tiny\color{codegray},
+    %basicstyle=\ttfamily,
+    %breakatwhitespace=false,         
+    %breaklines=true,                 
+    %captionpos=b,                    
+    %keepspaces=true,                 
+    %numbers=left,                    
+    %numbersep=5pt,                  
+    %showspaces=false,                
+    %showstringspaces=false,
+    %showtabs=false,                  
+    %tabsize=2
+    inputencoding=utf8,
+%    backgroundcolor=\color{white},
+    tabsize=2,
+    rulecolor=,
+    upquote=true,
+%    aboveskip={1.5\baselineskip},
+    columns=fixed,
+    showstringspaces=false,
+    extendedchars=true,
+    breaklines=true,
+    prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+    frame=single,
+    showtabs=false,
+    showspaces=false,
+    showstringspaces=false,
+    basicstyle=\scriptsize\ttfamily,
+    identifierstyle=\ttfamily,
+    keywordstyle=\ttfamily\color[rgb]{0,0,1},
+    commentstyle=\ttfamily\color[rgb]{0.133,0.545,0.133},
+    stringstyle=\ttfamily\color[rgb]{0.627,0.126,0.941},
+}
+\makeatletter
+\lstdefinelanguage{llvm}{
+  morecomment = [l]{;},
+  morestring=[b]", 
+  sensitive = true,
+  classoffset=0,
+  morekeywords={
+    define, declare, global, constant,
+    internal, external, private,
+    linkonce, linkonce_odr, weak, weak_odr, appending,
+    common, extern_weak,
+    thread_local, dllimport, dllexport,
+    hidden, protected, default,
+    except, deplibs,
+    volatile, fastcc, coldcc, cc, ccc,
+    x86_stdcallcc, x86_fastcallcc,
+    ptx_kernel, ptx_device,
+    signext, zeroext, inreg, sret, nounwind, noreturn,
+    nocapture, byval, nest, readnone, readonly, noalias, uwtable,
+    inlinehint, noinline, alwaysinline, optsize, ssp, sspreq,
+    noredzone, noimplicitfloat, naked, alignstack,
+    module, asm, align, tail, to,
+    addrspace, section, alias, sideeffect, c, gc,
+    target, datalayout, triple,
+    blockaddress
+  },
+  classoffset=1, keywordstyle=\color{red},
+  morekeywords={
+    fadd, sub, fsub, mul, fmul,
+    sdiv, udiv, fdiv, srem, urem, frem,
+    and, or, xor,
+    icmp, fcmp,
+    eq, ne, ugt, uge, ult, ule, sgt, sge, slt, sle,
+    oeq, ogt, oge, olt, ole, one, ord, ueq, ugt, uge,
+    ult, ule, une, uno,
+    nuw, nsw, exact, inbounds,
+    phi, call, select, shl, lshr, ashr, va_arg,
+    trunc, zext, sext,
+    fptrunc, fpext, fptoui, fptosi, uitofp, sitofp,
+    ptrtoint, inttoptr, bitcast,
+    ret, br, indirectbr, switch, invoke, unwind, unreachable,
+    malloc, alloca, free, load, store, getelementptr,
+    extractelement, insertelement, shufflevector,
+    extractvalue, insertvalue,
+  },
+  alsoletter={\%},
+  keywordsprefix={\%},
+}
+\makeatother
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\lstdefinestyle{Cstyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen}\ttfamily,
+    keywordstyle=\color{blue}\ttfamily,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{red}\ttfamily,
+    basicstyle=\scriptsize\ttfamily,
+    morecomment=[l][\color{codepurple}\ttfamily]{\#},
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstdefinelanguage{SystemVerilog}
+{morekeywords={% reserved keywords
+alias,always,always_comb,always_ff,always_latch,and,assert,assign,assume,automatic,before,bind,bins,binsof,break,cmos,constraint,context,continue,cover,cross,deassign,default,design,disable,dist,do,edge,else,expect,export,extends,extern,final,first_match,for,force,foreach,forever,fork,forkjoin,if,iff,ifnone,ignore_bins,illegal_bins,import,incdir,include,initial,inside,instance,intersect,join,join_any,join_none,liblist,library,macromodule,matches,medium,modport,nand,negedge,new,nmos,nor,noshowcancelled,not,notif0,notif1,null,or,packed,pmos,posedge,priority,protected,pulsestyle_onevent,pulsestyle_ondetect,pure,rand,randc,randcase,randsequence,rcmos,realtime,ref,reg,release,repeat,return,rnmos,rpmos,rtran,rtranif0,rtranif1,scalared,showcancelled,solve,tagged,this,throughout,time,timeprecision,timeunit,tran,tranif0,tranif1,tri,tri0,tri1,triand,trior,trireg,unique,use,vectored,wait,wait_order,wand,weak0,weak1,while,wildcard,wire,with,within,wor,xnor,xor},morekeywords=[2]{% folders
+begin,case,casex,casez,class,clocking,config,function,generate,covergroup,interface,module,package,primitive,program,property,specify,sequence,table,task,end,endcase,endclass,endclocking,endconfig,endfunction,endgenerate,endgroup,endinterface,endmodule,endpackage,endprimitive,endprogram,endproperty,endspecify,endsequence,endtable,endtask},morekeywords=[3]{% system tasks and functions
+$assertkill,$assertoff,$asserton,$bits,$bitstoreal,$bitstoshortreal,$cast,$comment,$countdrivers,$countones,$dimensions,$display,$dist_chi_square,$dist_erlang,$dist_exponential,$dist_normal,$dist_poisson,$dist_t,$dist_uniform,$dumpall,$dumpfile,$dumpflush,$dumplimit,$dumpoff,$dumpon,$dumpvars,$error,$exit,$fatal,$fclose,$fdisplay,$fell,$feof,$ferror,$fflush,$fgetc,$fgets,$finish,$fmonitor,$fopen,$fread,$fscanf,$fseek,$fstrobe,$ftell,$fullskew,$fwrite,$get_coverage,$getpattern,$high,$history,$hold,$increment,$incsave,$info,$input,$isunbounded,$isunknown,$itor,$key,$left,$list,$load_coverage_db,$log,$low,$monitor,$monitoroff,$monitoron,$nochange,$nokey,$nolog,$onehot,$onehot0,$past,$period,$printtimescale,$q_add,$q_exam,$q_full,$q_initialize,$q_remove,$random,$readmemb,$readmemh,$realtime,$realtobits,$recovery,$recrem,$removal,$reset,$reset_count,$reset_value,$restart,$rewind,$right,$root,$rose,$rtoi,$sampled,$save,$scale,$scope,$set_coverage_db_name,$setup,$setuphold,$sformat,$shortrealtobits,$showscopes,$showvariables,$showvars,$signed,$size,$skew,$sreadmemb,$sreadmemh,$sscanf,$stable,$stime,$stop,$strobe,$swrite,$time,$timeformat,$timescale,$timeskew,$typename,$typeof,$uandom,$ungetc,$unit,$unpacked_dimensions,$unsigned,$upscope,$urandom_range,$value,$plusargs,$var,$vcdclose,$version,$warning,$width,$write},morekeywords=[4]{%
+bit,buf,bufif0,bufif1,byte,cell,chandle,const,coverpoint,defparam,enum,event,genvar,highz0,highz1,inout,input,int,integer,large,local,localparam,logic,longint,output,parameter,pull0,pull1,pulldown,pullup,real,shortint,shortreal,signed,small,specparam,static,string,strong0,strong1,struct,super,supply0,supply1,type,typedef,union,unsigned,var,virtual,void},morekeywords=[5]{% compiler directives`
+begin_keywords,`celldefine,`default_decay_time,`default_nettype,`default_trireg_strength,`define,`delay_mode_distributed,`delay_mode_path,`delay_mode_unit,`delay_mode_zero,`else,`elsif,`end_keywords,`endcelldefine,`endif,`ifdef,`ifndef,`include,`line,`nounconnected_drive,`pragma,`resetall,`timescale,`unconnected_drive,`undef},alsoletter=\`,sensitive,morecomment=[s][\color{blue!80}]{/*}{*/},morecomment=[l][\color{blue}]//,morestring=[b]“}[keywords,comments,strings]
+
+\lstdefinestyle{Verilogstyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen}\ttfamily,
+    keywordstyle=\color{purple}\ttfamily,
+    keywordstyle={[2]\color{purple}\ttfamily},
+    keywordstyle={[3]\color{magenta}\ttfamily},
+    keywordstyle={[4]\color{teal}\ttfamily},
+    keywordstyle={[5]\color{violet!40}\ttfamily},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{red}\ttfamily,
+    basicstyle=\scriptsize\ttfamily,
+    morecomment=[l][\color{codepurple}\ttfamily]{\#},
+breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}

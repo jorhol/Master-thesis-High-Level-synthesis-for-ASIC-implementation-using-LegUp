@@ -7,67 +7,15 @@
 \usepackage{fancyvrb}
 \usepackage[justification=centering]{caption}
 \usepackage{cleveref}
+\usepackage{dirtree}
 
 \crefformat{figure}{#2figure~#1#3}
 
 %Configure listings syntax highlighting
-\definecolor{codegreen}{rgb}{0,0.6,0}
-\definecolor{codegray}{rgb}{0.5,0.5,0.5}
-\definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-\lstdefinestyle{Cstyle}{
-    backgroundcolor=\color{backcolour},   
-    commentstyle=\color{codegreen}\ttfamily,
-    keywordstyle=\color{blue}\ttfamily,
-    numberstyle=\tiny\color{codegray},
-    stringstyle=\color{red}\ttfamily,
-    basicstyle=\ttfamily,
-    morecomment=[l][\color{codepurple}\ttfamily]{\#},
-    breakatwhitespace=false,         
-    breaklines=true,                 
-    captionpos=b,                    
-    keepspaces=true,                 
-    numbers=left,                    
-    numbersep=5pt,                  
-    showspaces=false,                
-    showstringspaces=false,
-    showtabs=false,                  
-    tabsize=2
-}
 
-\lstdefinelanguage{SystemVerilog}
-{morekeywords={% reserved keywords
-alias,always,always_comb,always_ff,always_latch,and,assert,assign,assume,automatic,before,bind,bins,binsof,break,cmos,constraint,context,continue,cover,cross,deassign,default,design,disable,dist,do,edge,else,expect,export,extends,extern,final,first_match,for,force,foreach,forever,fork,forkjoin,if,iff,ifnone,ignore_bins,illegal_bins,import,incdir,include,initial,inside,instance,intersect,join,join_any,join_none,liblist,library,macromodule,matches,medium,modport,nand,negedge,new,nmos,nor,noshowcancelled,not,notif0,notif1,null,or,packed,pmos,posedge,priority,protected,pulsestyle_onevent,pulsestyle_ondetect,pure,rand,randc,randcase,randsequence,rcmos,realtime,ref,reg,release,repeat,return,rnmos,rpmos,rtran,rtranif0,rtranif1,scalared,showcancelled,solve,tagged,this,throughout,time,timeprecision,timeunit,tran,tranif0,tranif1,tri,tri0,tri1,triand,trior,trireg,unique,use,vectored,wait,wait_order,wand,weak0,weak1,while,wildcard,wire,with,within,wor,xnor,xor},morekeywords=[2]{% folders
-begin,case,casex,casez,class,clocking,config,function,generate,covergroup,interface,module,package,primitive,program,property,specify,sequence,table,task,end,endcase,endclass,endclocking,endconfig,endfunction,endgenerate,endgroup,endinterface,endmodule,endpackage,endprimitive,endprogram,endproperty,endspecify,endsequence,endtable,endtask},morekeywords=[3]{% system tasks and functions
-$assertkill,$assertoff,$asserton,$bits,$bitstoreal,$bitstoshortreal,$cast,$comment,$countdrivers,$countones,$dimensions,$display,$dist_chi_square,$dist_erlang,$dist_exponential,$dist_normal,$dist_poisson,$dist_t,$dist_uniform,$dumpall,$dumpfile,$dumpflush,$dumplimit,$dumpoff,$dumpon,$dumpvars,$error,$exit,$fatal,$fclose,$fdisplay,$fell,$feof,$ferror,$fflush,$fgetc,$fgets,$finish,$fmonitor,$fopen,$fread,$fscanf,$fseek,$fstrobe,$ftell,$fullskew,$fwrite,$get_coverage,$getpattern,$high,$history,$hold,$increment,$incsave,$info,$input,$isunbounded,$isunknown,$itor,$key,$left,$list,$load_coverage_db,$log,$low,$monitor,$monitoroff,$monitoron,$nochange,$nokey,$nolog,$onehot,$onehot0,$past,$period,$printtimescale,$q_add,$q_exam,$q_full,$q_initialize,$q_remove,$random,$readmemb,$readmemh,$realtime,$realtobits,$recovery,$recrem,$removal,$reset,$reset_count,$reset_value,$restart,$rewind,$right,$root,$rose,$rtoi,$sampled,$save,$scale,$scope,$set_coverage_db_name,$setup,$setuphold,$sformat,$shortrealtobits,$showscopes,$showvariables,$showvars,$signed,$size,$skew,$sreadmemb,$sreadmemh,$sscanf,$stable,$stime,$stop,$strobe,$swrite,$time,$timeformat,$timescale,$timeskew,$typename,$typeof,$uandom,$ungetc,$unit,$unpacked_dimensions,$unsigned,$upscope,$urandom_range,$value,$plusargs,$var,$vcdclose,$version,$warning,$width,$write},morekeywords=[4]{%
-bit,buf,bufif0,bufif1,byte,cell,chandle,const,coverpoint,defparam,enum,event,genvar,highz0,highz1,inout,input,int,integer,large,local,localparam,logic,longint,output,parameter,pull0,pull1,pulldown,pullup,real,shortint,shortreal,signed,small,specparam,static,string,strong0,strong1,struct,super,supply0,supply1,type,typedef,union,unsigned,var,virtual,void},morekeywords=[5]{% compiler directives`
-begin_keywords,`celldefine,`default_decay_time,`default_nettype,`default_trireg_strength,`define,`delay_mode_distributed,`delay_mode_path,`delay_mode_unit,`delay_mode_zero,`else,`elsif,`end_keywords,`endcelldefine,`endif,`ifdef,`ifndef,`include,`line,`nounconnected_drive,`pragma,`resetall,`timescale,`unconnected_drive,`undef},alsoletter=\`,sensitive,morecomment=[s][\color{blue!80}]{/*}{*/},morecomment=[l][\color{blue}]//,morestring=[b]“}[keywords,comments,strings]
 
-\lstdefinestyle{Verilogstyle}{
-    backgroundcolor=\color{backcolour},   
-    commentstyle=\color{codegreen}\ttfamily,
-    keywordstyle=\color{purple}\ttfamily,
-    keywordstyle={[2]\color{purple}\ttfamily},
-    keywordstyle={[3]\color{magenta}\ttfamily},
-    keywordstyle={[4]\color{teal}\ttfamily},
-    keywordstyle={[5]\color{violet!40}\ttfamily},
-    numberstyle=\tiny\color{codegray},
-    stringstyle=\color{red}\ttfamily,
-    basicstyle=\ttfamily,
-    morecomment=[l][\color{codepurple}\ttfamily]{\#},
-breakatwhitespace=false,         
-    breaklines=true,                 
-    captionpos=b,                    
-    keepspaces=true,                 
-    numbers=left,                    
-    numbersep=5pt,                  
-    showspaces=false,                
-    showstringspaces=false,
-    showtabs=false,                  
-    tabsize=2
-}
 
-\title{High-Level synthesis for ASIC \newlinetitle implementation using LegUp} % The title of your assignement; NB use \newlinetitle to start a newline
+\title{High-Level Synthesis for \newlinetitle Application-Specific Integrated Circuit \newlinetitle Implementation using LegUp} % The title of your assignement; NB use \newlinetitle to start a newline
 \author{Jørgen Holmefjord} % Your firstname and lastname
 \professor{Kjetil Svarstad, IET} % Affiliation = ITEM for instance
 \supervisor{Isael Diaz, Nordic Semiconductor}
@@ -86,13 +34,14 @@ breakatwhitespace=false,
 %\makeglossaries
 \makenoidxglossaries
 \begin{document}
+\input{listingdefines.tex}
 \selectlanguage{english}
 \pagenumbering{roman}
 \pagestyle{plain}
 \setlength{\parindent}{0pt}
 
 %% Only for the project; comment out the line below for the master's thesis; the front page will be generated automatically by DAIM
-%%\titleITEM
+\titleITEM
 
 %% Only for the master's thesis; for the project report the description is taken from It's Learning and added by the department
  %\selectlanguage{english} % Change to 'norsk' if you are writing in Norwegian
@@ -157,8 +106,11 @@ breakatwhitespace=false,
 %\include{chapters/01-introduction}
 \include{chapters/02-background}
 \include{chapters/03-methodology}
-%\include{chapters/04-results}
-%\include{chapters/05-conclusion}
+\include{chapters/04-resolving-issues}
+\include{chapters/05-creating-the-framework}
+\include{chapters/06-framework-results}
+\include{chapters/07-discussion}
+%\include{chapters/08-conclusion}
 %% include here the other chapters
 
 \renewcommand*{\bibname}{References}
@@ -176,6 +128,7 @@ breakatwhitespace=false,
  \renewcommand{\chaptername}{\appendixname}
 %% include below possible appendices (chapters)
 
-%\include{chapters/06-appendix}
+%\include{chapters/09-appendix}
+%\include{chapters/10-legup-source-codes}
 
 \end{document} 

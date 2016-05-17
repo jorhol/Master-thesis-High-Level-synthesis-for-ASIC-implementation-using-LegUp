@@ -1,0 +1,43 @@
+\chapter{Results and discussions}
+
+
+\section{First test-run}
+The first test-run were performed with 6 randomized constraints input to LegUp. This Each of the constraints could take the values 1 and 0, giving a total of $2^6=64$ combinations of constraints. The randomized constraints and the pattern of how the values are set is shown in \cref{tab:randomconstraint}.
+
+\begin{table}
+\tiny
+    \begin{center}
+    \begin{tabular}{l|cccccc}
+     & & & \textbf{MB} & \textbf{ENABLE} & \textbf{DUAL} & \\
+          &
+          \textbf{SDC NO} & 
+          \textbf{PIPELINE} & 
+          \textbf{MINIMIZE} & 
+          \textbf{PATTERN} & 
+          \textbf{PORT} &
+          \textbf{CASE} \\
+        \textbf{Constraint}
+           & \textbf{CHAINING}
+           & \textbf{ALL}
+           & \textbf{HW}
+           & \textbf{SHARING}
+           & \textbf{BINDING}
+           & \textbf{FSM}
+    \\ \midrule
+    & 0 & 0 & 0 & 0 & 0 & 1 \\
+    & 0 & 0 & 0 & 0 & 1 & 0 \\
+    & 0 & 0 & 0 & 0 & 1 & 1 \\
+    \textbf{Value} & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+    & &  &  &  &  &  \\
+    & 1 & 1 & 1 & 1 & 1 & 0 \\
+    & 1 & 1 & 1 & 1 & 1 & 1
+    \\ \bottomrule
+    \end{tabular}
+    \caption{\label{tab:randomconstraint}Constraints and values for first run}
+    \end{center}
+\end{table}
+
+
+
+\section{Path and hold violations}
+Some of the designs reports violating path length and hold times in synthesis. For a real circuit this would be a problem. To get rid of these violations, the target clock speed during synthesis could be decreased to something below the maximum frequency of the design. However, the clock speed is most of the time the only thing you cannot change in your design, and design compiler will try to create the circuit that meets timing. If timing is not met, the circuit description should be changed. This means that from our methodology, we will generate many circuits and only the ones that meet timing will be presented as an accepted solution. Ideally, the framework would implement a feedback loop, but for the sake of this proof-of-concept, a long list of solutions are produced and only the best ones are selected.

@@ -1,4 +1,5 @@
-\chapter{\label{chp:background}Background}
+\chapter{\label{chp:background}Theory and previous work}
+Theory, background and previous work is important to give a thurow understanding of the material to follow in the next chapters. The base of this background chapter is written as part of the specialization project conducted during the autumn of 2015, but it is included here to allow the report to be a freestanding document and to add a deeper level of explanation of some of the described concepts than that presented in the previous report. 
 In the early days of digital hardware design, gate design and layout were performed by hand. With the rapid growth in the numbers of transistors per digital chip-design, this method quickly became too time-consuming and the need for new and more automated design methods rose. \gls{rtl}-design using \gls{hdl} has long been the standard in digital hardware design. With the increasing demand for low power and small area in large \gls{soc} designs with multiple billion transistors, this methodology is no longer sufficient if hardware manufacturers want to hit the window of opportunity with their state-of-the-art product.
 
 \section{\label{sec:hls}High-Level Synthesis}
@@ -118,7 +119,7 @@ A structure, or struct for short, is a complex data-type that can contain multip
 \subsection{Pointers}
 A pointer is a variable that is defined to point at a location in memory where another object is stores. The pointer itself contains the memory address of the object it points at.
 \subsection{Declaration}
-Declaration refers to the process of declaring a type or an object that will be used at a later stage. This can be a structure in C, a Class in C++ or a module in Verilog. A type or an object needs only to be declared once and can then be used as many times as necessary. An example of a declaration of a struct in C,  
+Declaration refers to the process of declaring a type or an object that will be used at a later stage. This can be a structure in C, a Class in C++ or a module in Verilog. A type or an object needs only to be declared once and can then be used as many times as necessary. An example of a declaration of a struct in C: 
 \lstset{language=C++, style=Cstyle}
 \begin{lstlisting}
 typedef struct Book_t { char title[128], 
@@ -126,7 +127,7 @@ typedef struct Book_t { char title[128],
                         int isbn 
                       } Book;
 \end{lstlisting}
-
+By declaring the struct using \textit{typedef}, the struct can be instantiated by writing only the type-name and the variable name \verb!Book myBook!, instead of writing \verb!struct Book_t myBook!.
 \subsection{Instantiation}
 Instantiation is when the object you created with your declaration, is created and stored at a designated location in memory. When you instantiate an object, you usually assigns it a variable, or name, that you use throughout the scope of the object to reference the object.
 \subsection{Assignment}
@@ -180,95 +181,3 @@ Figure \ref{fig:firfilter} shows the direct form representation of a N-order \gl
 \caption{\label{fig:firfilter}Direct form representation of a N-order FIR-filter.}
 \end{figure}
 Even though the process of designing a \gls{fir}-filter might not be a trivial task, the implementation of an already designed filter is simple. As seen from \cref{eq:firfilterconv}, the filter can be described by the convolution formula, which implies that the filter can be implemented as convolution of the input function \textit{x(n)} with the impulse response function \textit{h(n)}.
-
-\subsection{SAP-1 architecture}
-\label{subsec:sap1spec}
-The \gls{sap-1} 8-bit architecture were introduced in \cite{malvino1983digital} as a beginners introduction to \gls{cpu}s, which can be implemented using simple hardware components. Figure \ref{fig:sap1arch} shows a block diagram of the \gls{sap-1} architecture. Each block correspond to a hardware component. Signals starting with an asterisk (*) are active low. 
-\begin{figure}[hbpt]
-\centering
-\includegraphics[width=0.9\textwidth]{../figs/SAP1.png}
-\caption{\label{fig:sap1arch}Block diagram of the SAP-1 architecture}
-\end{figure}
-The architecture consists of 5 different instructions, listed in table \ref{tab:sap1instr}.
-
-\begin{table}[hbpt]
-    \centering
-    \caption{\label{tab:sap1instr}Description of instructions in SAP-1 architecture}
-    \begin{tabular}{lll}
-      \textbf{Instruction} & \textbf{Opcode} & \textbf{Description} \\
-      \toprule
-      LDA & 0000 & Load RAM data into accumulator \\
-      \hline
-      ADD & 0001 & Add RAM data to accumulator \\
-      \hline
-      SUB & 0010 & Subtract RAM data from accumulator \\
-      \hline
-      OUT & 1110 & Load accumulator data into output register \\
-      \hline
-      HLT & 1111 & Stop processing\\
-      \bottomrule
-    \end{tabular}
-\end{table}
-\noindent
-A brief description of each module is given below. Note that the module \textit{Binary display} is for visual display of results, and are therefore not necessary in an integrated circuit implementation. In order to test and use the implemented circuits, it is also necessary to add some logic for adding instructions and data to memory.
-
-\begin{description}
-    \item[Program counter] \hfill \\
-    The program counter keeps track of where in the program we are. The counter is reset to 0 at program start and increments when $C_P$ is set. When $E_P$ is set, the value of the counter is output to Wbus (the lower 4 bits). The counter is 4 bit, meaning it can count from 0 to 15, before starting over again.
-    \item[Input and MAR] \hfill \\
-    Input and Memory Address Register (MAR) is used to latch memory location address, provided by program counter or instruction register, to the RAM module. When $\overline{L}_M$ is set, the the lower 4 bits of Wbus is loaded into the register.  
-    \item[16x8 RAM] \hfill \\
-    The RAM-module can store 16 8-bit words of data or instructions. When $\overline{CE}$ is set, the memory content of the address given by MAR is output to Wbus.
-    \item[Instruction register] \hfill \\
-    The Instruction register is used to hold an instruction fetched from memory. When $\overline{L}_I$ is set, the content of Wbus is loaded into the register. When $\overline{E}_I$ is set, the lower 4 bit of the register (instruction data) is output to Wbus. The upper 4 bit of the register (instruction opcode) is submitted to the controller/sequencer.
-    \item[Controller/sequencer] \hfill \\
-    The controller/sequencer module generates the clock (CLK) and clear (CLR) signals, as well as the control signals that controls all the other modules of the system. The control-word of each state-instruction combination is listed in \cref{tab:sap1control}.
-    \begin{table}[hbpt]
-    \centering
-    \caption{\label{tab:sap1control}Control signals for each state and instruction combo in \gls{sap-1} architecture}
-    \begin{tabular}{p{0.8cm}lp{0.3cm}p{0.3cm}p{0.3cm}p{0.3cm}p{0.3cm}p{0.3cm}p{0.3cm}p{0.3cm}p{0.3cm}p{0.3cm}p{0.3cm}p{0.3cm}}
-    \textbf{State} & \textbf{Instruction} & $C_P$ & $E_P$ & $\overline{L}_M$ & $\overline{CE}$ & $\overline{L}_I$ & $\overline{E}_I$ & $\overline{L}_A$ & $E_A$ & $S_U$ & $E_U$ & $\overline{L}_B$ & $\overline{L}_O$\\
-    \toprule
-    T1 &All&	        0&	1&	0&	1&	1&	1&	1&	0&	0&	0&	1&	1\\
-    \hline
-    T2 &All&	        1&	0&	1&	1&	1&	1&	1&	0&	0&	0&	1&	1\\
-    \hline
-    T3 &All&	        0&	0&	1&	0&	0&	1&	1&	0&	0&	0&	1&	1\\
-    \hline
-    \multirow{3}{*}{T4}& LDA,ADD,SUB &  0&	0&	0&	1&	1&	0&	1&	0&	0&	0&	1&	1\\
-    \cline{2-14}
-    & OUT&	        0&	0&	1&	1&	1&	1&	1&	1&	0&	0&	1&	0\\
-    \cline{2-14}
-    & Others&	    0&	0&	1&	1&	1&	1&	1&	0&	0&	0&	1&	1\\
-    \hline
-    \multirow{3}{*}{T5} &LDA&	        0&	0&	1&	0&	1&	1&	0&	0&	0&	0&	1&	1\\
-    \cline{2-14}
-    &ADD,SUB&	    0&	0&	1&	0&	1&	1&	1&	0&	0&	0&	0&	1\\
-    \cline{2-14}
-    &Others&	    0&	0&	1&	1&	1&	1&	1&	0&	0&	0&	1&	1\\
-    \hline
-    \multirow{3}{*}{T6} &ADD&	        0&	0&	1&	1&	1&	1&	0&	0&	0&	1&	1&	1\\
-    \cline{2-14}
-    &SUB&	        0&	0&	1&	1&	1&	1&	0&	0&	1&	1&	1&	1\\
-    \cline{2-14}
-    &Others&	    0&	0&	1&	1&	1&	1&	1&	0&	0&	0&	1&	1\\
-    \bottomrule
-    \end{tabular}
-\end{table}
-    \item[Accumulator A] \hfill \\
-    Buffer register that can store intermediate calculation results during a computer run. The register value is submitted to the adder-subtractor for arithmetic operations. When $\overline{L}_A$ is set, content on Wbus is loaded into the register. When $E_A$ is set, the register content is output to Wbus. 
-    \item[Adder/subtractor] \hfill \\
-    2's complement adder-subtracter. $S_U$ set low gives the sum $S=A+B$ and $S_U$ set high gives the sum $S=A+B'$, where $B'$ is the bit-wise inverted B-register. When $E_U$ is set, the calculated sum is output to Wbus.
-    \item[B register] \hfill \\
-    Buffer register for arithmetic operations. When $\overline{L}_B$ is set, the content of Wbus is loaded into the register. The register data is submitted to the adder/subtractor for addition or subtraction from the accumulator data.
-    \item[Output register] \hfill \\
-    The output register is used to transfer the results of a computer run to "the outside world". When $\overline{L}_O$ is set, the content of Wbus is loaded into the register. 
-    \item[Binary display] \hfill \\
-    Row of 8 LEDs, used to visualize result stored in output register.
-\end{description}
-\noindent
-The \gls{sap-1} architecture has 6 states, T1-T6, where T1-T3 is the fetch cycle and T4-T6 is the execution cycle. Some instructions do not need all 6 states to complete, but the architecture has a fixed length of 6 cycles per instruction. This means that some instructions perform "no operation" (NOPs) in the cycles where no work is done.
-A \gls{sap-1} instruction is 8 bit, in the format: 
-
-\noindent
-Instruction format = $\underbrace{XXXX}_{ \mathllap{\text{Instruction field. (Opcode)}} } \underbrace{XXXX}_{ \mathrlap{\text{Address field. Memory address of data}} }$

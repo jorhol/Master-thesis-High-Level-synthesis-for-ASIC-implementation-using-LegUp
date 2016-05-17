@@ -1,0 +1,15 @@
+\chapter{Discussion}
+
+\section{Advances in LegUp since last release}
+From the GIT repository of LegUp, it can be seen that many new features have been and still are being implemented for the next release version of LegUp. The current version (4.0), were released in August 2015. One of the more interesting features from the views of this project is the implementation of streaming inputs and outputs. Even though this has been implemented in this project as well, the native implementation can be more thoroughly tested and have more functionality than the one implemented here. However, it is still uncertain if a way of producing multiple output-signals have been implemented.
+
+http://lists.legup.org/pipermail/legup-commits/2015-September/002603.html
+
+commit 40dbecc7f39a5d8c6c897497a4b4b5ddef3da3a0
+Author: Jongsok Choi <jongsok.choi at gmail.com>
+Date:   Fri Sep 25 20:08:53 2015 -0400
+
+    Added member variable "isExternalRAM" to indicate if a RAM exists
+    outside the circuit and is not to be created inside (say for a pointer
+    that is passed in as an argument into the top-level function).
+    

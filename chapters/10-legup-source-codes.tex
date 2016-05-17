@@ -1,0 +1,221 @@
+\section{\label{lst:llvmirparserprogramcode}LLVM IR Parser}
+\lstset{language=C++,style=Cstyle}
+\begin{lstlisting}
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <algorithm>
+#include <vector>
+#include <set>
+using namespace std;
+
+int main(int argc, char *argv[]) {
+
+    // Check for correct amount of arguments
+    if (argc < 3) {
+        cout << "Missing output file argument\n";
+        if (argc < 2) {
+            cout << "Missing input file argument\n";
+        }
+        cout << "Arguments should be at the form: inputfile outputfile\n";
+        return 1;
+    }
+
+    vector<string> sources;
+    vector<string> targets;
+    vector<int> labels;
+
+    ifstream inFile(argv[1]);
+    ofstream outFile(argv[2]);
+
+    if (inFile.is_open()) {
+        cout << "inFile opened successfully\n";
+        string line;
+        string searchStringStores = "  store";
+        string searchStringMain = "define";
+        string labelString = "; <label>:";
+        string whitespace = " ";
+        int inMain = false;
+        int currLabel = 0;
+        bool isTarget = false;
+        // Read file line by line
+        while (getline(inFile, line)) {
+            // Only consider lines staring with "  store"
+            if (line.compare(0, searchStringMain.length(), searchStringMain) ==
+                    0 &&
+                !inMain) {
+
+                size_t found = 0;
+                do {
+                    found = line.find(whitespace, found + 1);
+                } while (line.compare(found + 1, 1, "@") != 0);
+                if (line.compare(found + 1, 6, "@main(") == 0) {
+                    inMain = true;
+                    currLabel = 0;
+                }
+            } else if (line.compare(0, labelString.length(), labelString) ==
+                       0) {
+                currLabel = atoi(line.substr(10, 3).c_str());
+            } else if (line.compare(0, searchStringStores.length(),
+                                    searchStringStores) == 0 &&
+                       inMain) {
+
+                // Remove commas from line
+                line.erase(std::remove(line.begin(), line.end(), ','),
+                           line.end());
+
+                // Remove leading and trailing whitespaces
+                line.erase(
+                    line.begin(),
+                    std::find_if(line.begin(), line.end(),
+                                 bind1st(std::not_equal_to<char>(), ' ')));
+
+                // Split line at whitespace
+
+                size_t found = line.find(whitespace);
+                while (found != string::npos) {
+                    size_t foundNext = line.find(whitespace, found + 1);
+
+                    // Only store words staring with a % sign
+                    if (line.compare(found + 1, 1, "%") == 0) {
+                        string substring =
+                            line.substr(found + 2, foundNext - found - 2);
+                        if (isTarget == true) {
+                            targets.push_back(substring);
+                            labels.push_back(currLabel);
+                            isTarget = false;
+                        } else {
+                            sources.push_back(substring);
+                            isTarget = true;
+                        }
+                    }
+                    found = foundNext;
+                }
+                if (sources.size() > targets.size()) {
+                    sources.pop_back();
+                    isTarget = false;
+                }
+                if (line.compare(0, 1, "}") == 0) {
+                    inMain = false;
+                }
+            }
+        }
+        inFile.close();
+    }
+
+    else
+        cout << "Unable to open input file\n";
+
+    if (outFile.is_open()) {
+        cout << "outFile opened successfully\n";
+        set<string> done;
+
+        // Iterate through all found stores and check for assignment connections
+        for (int i = 0; i < targets.size(); ++i) {
+            for (int j = 0; j < targets.size(); ++j) {
+                if (targets[i] == targets[j] && i != j &&
+                    done.find(sources[i]) == done.end() &&
+                    sources[i].find("__out_") == 0) {
+                    done.insert(sources[j]);
+                    string sigName = sources[i];
+                    // Only print parameters defined as outputs
+                    if (sigName.find("__out_") == 0) {
+                        sigName = sigName.substr(6, std::string::npos);
+                        outFile << sigName << " " << sources[j] << " "
+                                << labels[j] << " " << labels[i] << " "
+                                << targets[i] << "\n";
+                    }
+                }
+            }
+        }
+        outFile.close();
+    }
+
+    else
+        cout << "Unable to open output file\n";
+
+    return 0;
+}
+
+\end{lstlisting}
+
+\section{\label{{sec:hlsscript}}Script for running HLS framework}
+\lstset{language=[gnu] make, style=Cstyle}
+\begin{lstlisting}[caption={HLS Script source code}label=lst:hlsscript]
+#!/bin/bash
+
+DESIGNNAME=designname
+REMOTEIP=192.168.12.33 # IP of the computer running the LegUp VirtualBox guest
+REMOTEPORT=3022 # Port that is forwarded to port 22 on VirtualBox guest
+REMOTEDIR=/home/legup/legup-4.0/examples
+LEGUPUSER=legup # Username of LegUp image
+LEGUPPASS=letmein # Password of LegUp image
+LOCALDIR=basedir/$DESIGNNAME/ip/$DESIGNNAME #Location of source files on Linux server.
+
+SSHCOMMANDS2="mkdir $REMOTEDIR/$DESIGNNAME; cd $REMOTEDIR/$DESIGNNAME/; libreoffice --headless --convert-to csv constraints.xlsx --outdir .; exit" # ssh commands for converting excel file to csv
+
+if [$1 = "setup"]; then
+	echo Setup started
+	ssh-keygen -f id_rsa -t rsa -N ''
+	spawn ssh-copy-id "$LEGUPUSER@$REMOTEIP -p $REMOTEPORT"
+	expect "password:"
+	send "$LEGUPPASS\n"
+	expect eof
+	echo Setup finished
+fi
+
+mkdir -p $LOCALDIR/hls/
+ssh $LEGUPUSER@$REMOTEIP -p $REMOTEPORT "mkdir -p $REMOTEDIR/$DESIGNNAME"
+scp -P $REMOTEPORT $LOCALDIR/$DESIGNNAME.c $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME #Copy design file to LegUp image
+
+scp -P $REMOTEPORT $LOCALDIR/hls/constraints.xlsx $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/ #Copy design constraint definitions to LegUp image
+ssh $LEGUPUSER@$REMOTEIP -p $REMOTEPORT $SSHCOMMANDS2 #Run commands and script for generating constraint and Makefiles
+scp -P $REMOTEPORT $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/constraints.csv $LOCALDIR/hls/ #Copy CSV file from LegUp image
+sed 's/\"//g' -i $LOCALDIR/hls/constraints.csv
+rm -r $LOCALDIR/hls/makefiles $LOCALDIR/hls/constraintfiles
+mkdir $LOCALDIR/hls/makefiles $LOCALDIR/hls/constraintfiles
+cd $LOCALDIR/hls/
+#g++ $LOCALDIR/hls/constraintsGenerator.cpp -o $LOCALDIR/hls/constraintsGenerator.run
+$LOCALDIR/hls/constraintsGenerator.run $LOCALDIR/hls/constraints.csv .. $DESIGNNAME
+NUMRUNS=$?
+echo Generated $NUMRUNS constraint and Makefiles
+rm $LOCALDIR/hls/synthesis_results.rpt
+COUNTER=0
+while [  $COUNTER -lt $NUMRUNS-1 ]; do
+	rm $LOCALDIR/rtl/{*.tcl,*.v,*.mif}
+	SSHCOMMANDS="export PATH=/home/legup/clang+llvm-3.5.0-x86_64-linux-gnu/bin:$PATH; cd $REMOTEDIR/$DESIGNNAME/; make clean; make; exit" # Commands to run on SSH session. Need to add clang to PATH as this is not present in SSH session.
+	scp -P $REMOTEPORT $LOCALDIR/hls/constraintfiles/config$COUNTER.tcl $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/ #Copy design constraint file to LegUp image
+	scp -P $REMOTEPORT $LOCALDIR/hls/makefiles/Makefile$COUNTER $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/Makefile #Copy design Makefile to LegUp image
+	ssh $LEGUPUSER@$REMOTEIP -p $REMOTEPORT $SSHCOMMANDS #Run LegUp
+	
+	scp -P $REMOTEPORT $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/$DESIGNNAME.v $LOCALDIR/rtl/ #Copy Verilog file from LegUp image
+	scp -P $REMOTEPORT $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/test_main.v $LOCALDIR/sim/tb/ #Copy Verilog testbench file from LegUp image
+	
+	#Run simulation
+	(cd $LOCALDIR/sim/run/ && (RUN_ALL --clean)) 
+	
+	#Run synthesis
+	cp $LOCALDIR/rtl/fir.v $LOCALDIR/rtl/main.v
+	find $LOCALDIR/rtl/fir.v -type f -exec sed -i "s/module main/module $DESIGNNAME/g" {} \; #Replace top modulename main with designname
+	
+	(cd $LOCALDIR/syn/ && (make compile -cclean) && (make compile -B)) #Run synthesis -cclean removes old data, -B forces rebuild all targets
+	
+	#Store synthesis results to common file
+	echo "Design number: $COUNTER" >> $LOCALDIR/hls/synthesis_results.rpt
+	grep "Design Area:" $LOCALDIR/rtl/syn/reports/fir.mapped.qor.rpt >> synthesis_results.rpt
+	grep "Critical Path Clk Period:" $LOCALDIR/rtl/syn/reports/fir.mapped.qor.rpt -m 1 >> synthesis_results.rpt
+	grep "Total Dynamic Power" $LOCALDIR/rtl/syn/reports/fir.mapped.power.rpt >> synthesis_results.rpt
+	grep "Cell Leakage Power" $LOCALDIR/rtl/syn/reports/fir.mapped.power.rpt >> synthesis_results.rpt
+	echo "" >> synthesis_results.rpt
+	
+	#Store results in dedicated folder
+	mkdir -p $LOCALDIR/hls/rtl$COUNTER/
+	cp $LOCALDIR/hls/constraintfiles/config$COUNTER.tcl $LOCALDIR/rtl/ #Copy design constraint file to current rtl folder
+	cp $LOCALDIR/hls/makefiles/Makefile$COUNTER $LOCALDIR/rtl/Makefile
+	cp -r $LOCALDIR/{rtl/,sim/,syn/} $LOCALDIR/hls/rtl$COUNTER/
+	
+	let COUNTER=COUNTER+1 
+done
+echo HLS finished
+exit $?
+\end{lstlisting}

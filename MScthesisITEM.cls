@@ -61,6 +61,7 @@
 \RequirePackage{textcomp}
 \renewcommand{\labelitemi}{\textendash}
 \renewcommand{\labelitemii}{\textopenbullet}
+\usepackage{minted}
 
 % Columns
 \RequirePackage{multicol}
