@@ -1,6 +1,6 @@
 \chapter{Methodology}
 
-\section{LegUp classes}
+\section{\label{sec:legupclasses}LegUp classes}
 LegUp has some predefined classes that is important for the understanding of the following description of how the issues in LegUp are resolved. The following subsections will describe these classes in more detail.
 \subsection{RTLModule}
 The RTLModule class models a hardware RTL module. The class stores information about all ports (inputs and outputs), signals, parameters and sub-modules. Each function declared in the C-code transforms into a RTLModule object. Each function that is called from the function will be added as a sub-module to the RTLModule object, meaning a module instantiation will be added to the module. Important member functions in the RTLModule class is:
