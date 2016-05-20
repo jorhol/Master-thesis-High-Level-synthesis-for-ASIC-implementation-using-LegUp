@@ -1,44 +1,9 @@
 \chapter{Introduction}
 \label{chp:introduction} 
 \section{\label{sec:motivation}Motivation}
-The requirements for power efficiency in hardware design is rapidly increasing as more and more end-user products runs on battery. Long battery life is important for many applications, and this demand forces hardware designers to work harder to find the best trade-off between power, area, and performance. Hardware exploration is used to find the best architectural model of a design. This process is very time-consuming as it involves many steps, for instance a \gls{dsp} application design process can include the following steps:
-\begin{compactenum}
-    \item Make Matlab simulations 
-    \item Decide:
-    \begin{compactitem}
-        \item Quantization
-        \item Number of steps of internal modules
-    \end{compactitem}
-    \item Design$\backslash$choose:
-    \begin{compactitem}
-        \item The hardware architecture
-        \item The ratio of the memories
-        \item The type of transistors to use
-    \end{compactitem}
-    \item ...
-    \item Code
-    \item Simulate
-    \item Extract power consumption
-\end{compactenum}
-\gls{hls} offers a possible way to shorten this design cycle, by taking advantage of the automatic translation of functional description into digital hardware, one can make optimizations to the system and produce multiple architectural options to choose from. For this project the ultimate goal would be to implement a framework that can automate this process by running optimizations over an entire system and create, simulate, and estimate energy consumption from thousands of architectural variations. 
 
-This way, the design process is simplified into the following flow:
-\begin{compactenum}
-    \item Describe circuit functionality in \gls{hll}
-    \item Run framework
-    \item Select best result from reports
-    \item Write \gls{hdl}-code
-\end{compactenum}
-Traditional \gls{hls}-tools has either been commercial, with very limited access to the source code, or academic open-source tools that were not mature enough for usage in a commercial application. LegUp, the tool examined in this project has reached a maturity not before seen in an academic open-source \gls{hls}-tool. Typically, \gls{hls}-tools generate a large amount of overhead due to the increased abstraction level of the functional specification. By incorporating Nordic Semiconductor's interfaces, coding-style, and practices, described in the \gls{ddvc} \cite{nordicddvc}, into the Verilog generating part of the \gls{hls}-tool, the goal is to reduce this overhead as much as possible, preferably to just a few percentages.
 
 \section{Project objectives}
-To achieve the ultimate goal of the project within the time-frame of this thesis, might be a bit optimistic and exaggerated. Some intermediate objectives have therefore been defined, to get some insight into the tools and get started on building a framework:
-\begin{enumerate}
-    \item Investigate how LegUp performs \gls{hls} and how Verilog is generated. Then look into the possibility of changing or replacing this process in order to generate Verilog suitable for synthesis towards an ASIC architecture. This objective will discover if there are potential problems with LegUp that needs to be handled in order for the other objectives to be achieved.
-    \item Specify a \gls{hls} framework that can be used for architectural exploration. The framework shall automatically perform \gls{hls}, simulation, synthesis, layout and estimate power consumption of the design for a variety if different architectural variations and generate score-files, showing the area usage, speed, and power consumption for each alternative. This way the designer can choose design based on design-goals and constraints.
-    \item Define a reference design and implement this in both C and Verilog for comparison of area and power consumption between a design written directly in Verilog and multiple \gls{hls}-generated Verilog outputs from a variety of different architectural variations and optimization goals. This will include a design-case compliant to Nordic Semiconductor's \gls{ddvc}.
-    \item Make a script that automates the process of the above described framework. The script shall take a file-list pointing to a C-project as input together with constraints and optimization goals like speed, area or power consumption, specified by the user. The framework shall return a score-file, reporting area, speed, and power estimates for each of the targeted architectures.
-\end{enumerate}
+
 
 \section{Overview of the thesis}
-\Cref{chp:background} describes the theory of how \gls{hls} and synthesis is performed, with weight on the tools used throughout this thesis. It also presents two reference designs and the theory behind these. \Cref{chp:methodology} gives an introduction to the \gls{hls}-tool, LegUp, and specifies a framework and tool-flow that can be implemented as an automated framework for architectural exploration of digital hardware. The implementation of the reference designs are also presented here. \Cref{chp:resdisc} describes shortly what the output from LegUp looks like. Further multiple problems that were encountered while working with LegUp, are presented and discussed. Finally, \cref{chp:conclusion} sums up the findings and concludes this work. A large section of future work is included in this chapter, to specify what must be handled - and to some extent, how to handle it - in order to achieve the ultimate goal described in \cref{sec:motivation}. Some additional tasks that will improve the framework have been included in the future work-section as well.

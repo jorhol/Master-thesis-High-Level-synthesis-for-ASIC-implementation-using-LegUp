@@ -69,16 +69,16 @@ By declaring input parameters as volatile, a local RAM will be generated in the 
 
 
 
-\subsection{Removing memory controller}
+\section{Removing memory controller}
 One of the main issues with using LegUp for 
 
-\subsection{\label{subsec:inoutdecl}Declaring inputs and outputs}
+\section{\label{subsec:inoutdecl}Declaring inputs and outputs}
 Each function declared in a C program will be translated into a Verilog-module by LegUp. Since LegUp primarily is designed for implementing hardware accelerators for FPGAs, it does not handle inputs and outputs well to and from the top module. In an ASIC implementation, inputs and outputs are essential to most module design and must therefore be easy to implement. In a C-program written for execution on a computer the input parameters to the main function is defined to be on the form "int main(int argc, char *argv[])". This limits the possibility to declare inputs to the module with any data-type. To solve this problem, the flag \textit{-ffreestanding} has to be passed to the clang compiler frontend of LLVM. The compiler will then consider the C-code to contain a freestanding - not a hosted - environment, and therefore not care about what types of inputs and return values the \textit{main}-function has. In LegUp, the flag can be passed to the compiler by adding it to the variable \textit{CLANG\_FLAG} in the file \textit{Makefile.config}.
 
 The solution that would have been used in a hosted environment is to use pointers as input and output values as pass-by-reference.
 
 Two different solutions for declaring inputs and outputs are considered and implemented. Both solutions are based on declaring both inputs and outputs as parameters to the main function.
-\subsubsection{Name prefix}
+\subsection{Name prefix}
 The first solution is to use a prefix to distinguish between input and output parameters. To use a prefix that is seldom used in a variable name, the prefix is set to \textit{\_\_out\_}. Previously, LegUp assumed all function parameters were inputs, and added the signals to the RTLModule. This has been altered to check the name of the parameter and add it as an output reg if the name starts with \textit{\_\_out\_} or otherwise, add it as an input.
 
 \begin{lstlisting}
@@ -95,7 +95,7 @@ if (sigName.find("__out_") == 0) {
 \end{lstlisting}
 The advantage of this method is that it is easy to implement and easy to use, as the user only has to remember the name prefix when writing the functional specification. The name-prefix can also be useful in other sections of the program, as we will see later in section \ref{sec:assValueToOutput}. The disadvantage is that the name prefix needs to be used throughout the program. It would however be preferable to use a temporary variable in the program until the final value is calculated and ready to be assigned to the output. This will reduce the amount of times the name-prefix must be used.
 The name prefix will be stripped by LegUp, making the signal in the final Verilog-module look much cleaner.
-\subsubsection{\label{subsubsec:inoutparameter}TCL-command}
+\subsection{\label{subsubsec:inoutparameter}TCL-command}
 The other alternative is to declare in a TCL-command if each parameter is input or output. This also makes it possible to declare the size of the signal, but LegUp does not allow setting the size of the signals to a size lower than the size of what will be assigned to the signal.
 
 The TCL-command \textit{set\_custom\_main\_function} described above, creates a vector with objects of the class CustomVerilogIO, each containing one input or output signal to the main module. The parameters can then be added as input or output to the RTLModule based on this information.
@@ -116,7 +116,7 @@ for (std::vector<CustomVerilogIO>::iterator it = cmIO.begin();
 }
 \end{lstlisting}
 
-\subsection{\label{sec:assValueToOutput}Assigning values to outputs}
+\section{\label{sec:assValueToOutput}Assigning values to outputs}
 In \cref{subsec:inoutdecl} two methods of declaring parameters as outputs in the generated module were presented. Unfortunately, assigning values to a input parameter is undefined behaviour in C. This means that even though the compiler will generate LLVM IR that perform this operations, they are not handled in the LegUp backend pass that transforms the IR into Verilog. The result is that a signal declared as output is assigned to a local RAM module and no assignments to the output exists.
 
 To overcome this issue, the idea to look at the LLVM IR code to see if any information about assignment could be gathered here and used in LegUp to assign the correct values to the output were brought up. 
@@ -147,7 +147,7 @@ define void @main(i32 %inDataA, i32 %inDataB, i32 %__out_outData) #0 {
 Lets analyze the LLVM IR code output from compilation, shown in \cref{lst:llvmirparsercode}. On line 2 the temporary register \%1 is created. On line 3, the input parameter declared as volatile, \textit{\_\_out\_outData}, is stored to this register. On line 7, the multiplication calculation of the inputs inDataA and inDataB is stored to a new temporary register \%3. On line 8, the content of register \%3 is stored back to register \%1. This information can be exploited to create a program that traces stores, back to the original input parameter. In this example, we can easily see that the multiplication calculation easily can be traced back to the output \textit{\_\_out\_outData}, but in more complex programs, this tracing might not be that easily done. The solution would be to create a script that parses through the IR code and makes these connections for us. 
 
 When LegUp generates signals, they will be named by the convention \%functionName\%\_\%labelNumber\%\_registerNumber\%. This means that the example above will create the signals (or RAM modules for parameters and arrays) \textit{main\_0\_1} from line 2 and \textit{main\_2\_3} from line 7.
-\subsubsection{LLVM IR assignment parser program}
+\subsection{LLVM IR assignment parser program}
 A program were created to parse the LLVM IR generated by the compilation. This section will explain in words and pseudo-code how the program works. The full source code of the parser program is included in \ref{lst:llvmirparserprogramcode} in the appendix. The program takes two command-line arguments when called, name of the input file and name of the output file. The input file should be the final LLVM IR file generated by LegUp, named \textit{\%designName\%.ll}. The output can be what you like, but the default file-name used in LegUp for reading of the output is \textit{LLVMParsed.log}. The program consist of two parts, the first part handles the reading and parsing of the input file, the second part is handling the generating of the output file. The program is created to only care about the main-function, as this is the module where it is vital to have multiple output signals. The program can easily be changed by altering the source code, if found necessary at a later point.
 
 A pesudo-code describing the first part of the program is shown in \cref{alg:llvmparserpart1}. The parser starts by looking for the main-function. When in the main-function, the program looks for lines containing stores or labels. If a store is found, the source and target register of the store is stored in a vector, together with the current label. If a new label is found, the label is set as the current label.
@@ -233,7 +233,7 @@ Execution of the program is added to the common Makefile, \textit{Makefile.commo
 $(LEVEL)/LlvmParser.run $(NAME).ll LlvmParsed.log
 \end{verbatim}
 
-\subsubsection{\label{subsec:assigningoutputsignals}Assigning output signals}
+\subsection{\label{subsec:assigningoutputsignals}Assigning output signals}
 As described in \cref{sec:legupclasses}, any RTLSignal that exist in an RTLModule can be found by calling the function \textit{find()}, with the name of the signal passed as a string parameter. A RTLSignal can have multiple drivers and conditions, and the i-th driver or condition can be found by calling getDriver(i) and getCondition(i). The initial idea when the LLVM IR parser program was created, was to find each of the signal and connect it to the correct output.
 
 For every parameter to the function, the compiler will allocate a register and store the parameter value to this register. Whenever a store to a parameter is performed, this value will be stored to the first allocated register. In LegUp, the allocated register will be implemented as a RAM module and all stores to the parameter will be stored to this ram. This information can be exploited to easily assign values stored to this RAM to the output port instead.
@@ -293,10 +293,10 @@ The RAM module will be named by the same convention as signals, naming the RAM i
   \end{algorithmic}
 \end{algorithm}
 
-\subsubsection{Removing local RAMs}
+\subsection{Removing local RAMs}
 After reassigning the RAM stores to the output port, the generated RAM module corresponding to the input parameters are no longer needed. The ram modules can be removed to save area and power consumption. To make this operation optional, the TCL-parameter \textit{REMOVE\_UNUSED\_LOCAL\_RAMS} were added. By setting this parameter, the local RAM modules will be removed. All RAMs local to a module is stored together with its corresponding function (from the C-code) in a variable, \textit{	isLocalFunctionRam}. When the RAM is removed, it is simply removed from this variable. In addition to removing the RAM module, all signals to and from the RAM needs to be removed as well. Notice that only the RAMs generated by output parameters are removed from the main module. RAM modules can also be generated by arrays and other large data structures, but these will not be removed in any cases.
 
-\subsection{Streaming inputs/outputs}
+\section{Streaming inputs/outputs}
 For most module designs to be useful, fast and , it must be able to continuously take new inputs and generate outputs, without having to start and stop the entire module each time, with all the overhead in time this would require. The way LegUp is designed, functions are used as hardware accelerators, meaning it gets some input, performs some calculations and the outputs the result. The module is then finished and will not run again until next time the accelerated function is called. For this approach to work for an ASIC implementation, a top module would need to be created to assign new inputs and start the module again once it is finished with the last iteration. This would create a lot of unwanted overhead, both in size and speed. A better solution would therefore be to add a while loop inside the main function of the C program to make the program run continuously.
 
 With this solution some new issues arise. 
@@ -345,7 +345,7 @@ void main( int done ) {
 }
 \end{lstlisting}
 
-\subsection{\label{subsec:tbgen}Testbench generation}
+\section{\label{subsec:tbgen}Testbench generation}
 LegUp did generate a basic testbench shell, but this were very static and incorporated into the same file as the module design, making it impractical to use in Nordic's toolflow. The generated testbench consisted of a testbench module, main\_tb, which instantiate the top module, \textit{top}, and sets reset, start and waitrequest flags. The input and output signals in the top module does not contain custom signals from the main module, and in an ASIC implementation we are not interested in the memory controller and additional modules declared/instantiated in the top module. The solution then, became to instantiate the main module instead and add each input or output by iterating over the ports in the main module.
 
 \begin{lstlisting}
@@ -399,4 +399,3 @@ Due to some alterations made to the LegUp libraries, some additional constraints
 To support structs, byte-enable must be supported by the RAM or ROM module used to store the data. The RAM and ROM modules inferred by LegUp does not support byte-enable, resulting in struct support not being present when writing the functional specification. If structs are used in the code, LegUp will use an altsyncram-module instead of inferring RAMs. The altsyncram-module is not supported by the IC-compiler toolflow used at Nordic for synthesis, and inferred RAM-modules must therefore be used. 
 \subsection{Pointers}
 Pointers are used to reference an object in memory, opposed to passing a copy of the actual object between function. This reduces both CPU-time and memory-space, as objects does not need to be copied every time it is used, and makes it possible to alter a memory object directly without implicit load and store operations. As the memory controller used to pass data between different modules are unwanted in an ASIC implementation, support for pointers are limited to use inside the function where the pointer is declared. This limitation is a big drawback with the additions to LegUp.
-\subsection{}

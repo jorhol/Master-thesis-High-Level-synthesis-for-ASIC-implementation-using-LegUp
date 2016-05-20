@@ -1,3 +1,4 @@
+\chapter{Creating the Framework}
 \section{Create New Project}
 To create a new project, the directory hierarchy needs to be copied from a source and directories and filenames needs to be altered to match the design name. Filelist and setting files also needs to be altered to include the correct design file names. This process is automated into a bash script, \textit{CreateNewProject.sh}. To run the script, the directory \textit{\_source}, containing the source project, must be present in the directory where the script are called.
 
@@ -99,6 +100,8 @@ In order to automatically run HLS, simulation, synthesis and power-estimation, a
   VBoxManage modifyvm myserver --natpf1 "ssh,tcp,,3022,,22"  
 \end{verbatim}
 Here "myserver" is the name of the VirtualBox VM and should be replaced with whatever you called the VM when you created it in VirtualBox. When this setting is set, it is possible to establish a connection over SSH from the Linux server directly to LegUp by using the port 3022 and the local IP-address of the computer running VirtualBox.
+
+The standard SSH and SCP packages on Linux systems does not support passing the password as an argument to the command. To avoid the need to enter username and password each time a file is transferred using SCP or a command is executed using SSH, it is necessary to setup key-based authentication. This can be done manually, but the framework-script can also do this setup automatically if you pass the flag \textit{-s}. What the script does, is to generate a RSA key-file for the current user with \textit{ssh-keygen} and copy the generated file to LegUp using \textit{ssh-copy-id}. The password is passed to \textit{ssh-copy-id} using \textit{spawn}, \textit{expect} and \textit{send} commands.
 
 
 The script is written for the bash-shell. The script has 7 main tasks; 
