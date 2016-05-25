@@ -1,3 +1,197 @@
 \chapter{Appendix}
-\section{\label{sec:sourcecode}Reference design source codes}
+\section{\label{sec:sourcecode}Source code of FIR-filter reference design}
+\subsection{\label{subsec:cfircode}C source code}
+\lstset{language=C,style=CStyle}
+\begin{lstlisting}
+#include <stdint.h>
 
+#define INPUTSIZE 32
+#define TAPS 16
+
+int main(int done, int inData, volatile long long int __out_outData) {
+
+  int sr[TAPS-1] = {0};
+  long long int products[TAPS] = {0};
+  long long int sum = 0;
+  while(done == 0){
+    products[0] = inData * 1;
+    sum = products[0];
+    for (int i = 1; i < TAPS ; i++){
+      for(int j = TAPS-1; j > 0; j--){
+        sr[j] = sr[j -1];
+      }
+      sr[0] = inData;
+      for (int k = 1; k < TAPS ; k++){
+        products[k] = sr[k-1] * (k+1);
+      }
+      sum = sum + products[i];
+    }
+    __out_outData = sum;
+  }
+  return 0;
+}
+\end{lstlisting}
+
+\subsection{\label{subsec:cfircode2}Otimized C source code}
+#include <stdint.h>
+
+#define INPUTSIZE 32
+#define TAPS 16
+
+int main(int done, int inData, volatile long long int __out_outData) {
+  int sr[TAPS-1] = {0};
+  long long int sum = 0;
+  while(done == 0){
+    sum = inData;
+    for (int i = 1; i < TAPS ; i++){
+      for(int j = TAPS-1; j > 0; j--){
+        sr[j] = sr[j -1];
+      }
+      sr[0] = inData;
+      sum = sum + sr[i-1] * (i+1);
+    }
+    __out_outData = sum;
+  }
+  return 0;
+}
+
+\subsection{\label{subsec:cfircode}Verilog source code}
+\lstset{language=Verilog,style=VerilogStyle}
+\begin{lstlisting}
+module fir (
+    clk,
+    reset,
+    dataIn,
+    dataOut
+  );
+  parameter WIDTH = 32;
+  parameter DEPTH = 16;
+
+		
+  input clk, reset;
+  input signed [WIDTH-1:0] dataIn;
+  output wire signed [2*WIDTH-1:0] dataOut;
+  integer i, j, k;
+  reg signed [WIDTH-1:0] sr [DEPTH-2:0];
+  reg signed [2*WIDTH-1:0] products [DEPTH-1:0];
+  reg signed [2*WIDTH-1:0] sum;
+
+  always @( posedge clk or posedge reset ) begin
+    if( reset == 1) begin
+      sum = 0;
+    end
+    else begin
+	  for(i = DEPTH-2; i > 0; i=i-1) begin
+        sr[i] <= sr[i-1];
+      end
+	  sr[0] <= dataIn;
+    end
+  end
+
+  always @(*) begin
+	products[0] = dataIn * 1;
+    for (j = 1; j < DEPTH ; j=j+1) begin
+      products[j] = sr[j-1] * (j+1);
+	end
+  end
+
+  always @(*) begin
+    sum = products [0];
+    for (k = 1; k < DEPTH ; k=k+1) begin
+      sum = sum + products[k];
+	end
+  end
+	
+  assign dataOut = sum;
+	
+endmodule
+\end{lstlisting}
+
+\subsection{\label{subsec:firfiltertb}Testbench for FIR-filter}
+\lstset{language=Verilog,style=VerilogStyle}
+\begin{lstlisting}
+`timescale 1 ns / 1 ns
+module test_fir
+(
+);
+
+reg  clk;
+reg  reset;
+reg  start;
+wire [63:0] return_val;
+wire  finish;
+reg  memory_controller_waitrequest;
+reg [31:0] arg_done;
+reg [31:0] arg_inData;
+wire [63:0] arg_outData;
+wire  arg_outData_valid;
+wire  iterationFinish;
+
+
+fir u_fir (
+	.clk (clk),
+	.reset (reset),
+	.start (start),
+	.finish (finish),
+	.memory_controller_waitrequest (memory_controller_waitrequest),
+	.return_val (return_val),
+	.arg_done (arg_done),
+	.arg_inData (arg_inData),
+	.arg_outData (arg_outData),
+	.arg_outData_valid (arg_outData_valid),
+	.iterationFinish (iterationFinish)
+);
+
+// Clock generation
+initial 
+    clk = 0;
+always @(clk)
+    clk <= #10 ~clk;
+
+initial begin
+@(negedge clk);
+reset <= 1;
+@(negedge clk);
+reset <= 0;
+start <= 1;
+@(negedge clk);
+start <= 0;
+end
+
+always@(finish) begin
+    if (finish == 1) begin
+        $display("At t=%t simulation finished", $time);
+        $display("Cycles: %d", ($time-50)/20);
+        $finish;
+    end
+end
+
+initial begin
+memory_controller_waitrequest <= 1;
+@(negedge clk);
+@(negedge clk);
+memory_controller_waitrequest <= 0;
+end
+
+// Custom testcases:     
+  initial begin
+    arg_inData = 32'b0; 
+		arg_done = 32'b0;
+  end 
+	
+	initial  
+  begin : TEST_CASE 
+		@(posedge reset)
+		repeat (1000) begin 
+			@(negedge clk); 
+			arg_inData = $random; 
+			@(posedge iterationFinish); 
+		end	
+		$display("Finished applying inData\n");
+		arg_done = 32'b1;
+		#100ns
+		$finish;
+  end 
+
+endmodule 
+\end{lstlisting}

@@ -1,43 +1,6 @@
-\lstdefinestyle{LLVMstyle}{
-    %keywordstyle=\ttfamily\color[rgb]{0,0,1},
-    %commentstyle=\ttfamily\color[rgb]{0.133,0.545,0.133},
-    %stringstyle=\ttfamily\color[rgb]{0.627,0.126,0.941},
-    %backgroundcolor=\color{backcolour},   
-    %numberstyle=\tiny\color{codegray},
-    %basicstyle=\ttfamily,
-    %breakatwhitespace=false,         
-    %breaklines=true,                 
-    %captionpos=b,                    
-    %keepspaces=true,                 
-    %numbers=left,                    
-    %numbersep=5pt,                  
-    %showspaces=false,                
-    %showstringspaces=false,
-    %showtabs=false,                  
-    %tabsize=2
-    inputencoding=utf8,
-%    backgroundcolor=\color{white},
-    tabsize=2,
-    rulecolor=,
-    upquote=true,
-%    aboveskip={1.5\baselineskip},
-    columns=fixed,
-    showstringspaces=false,
-    extendedchars=true,
-    breaklines=true,
-    prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
-    frame=single,
-    showtabs=false,
-    showspaces=false,
-    showstringspaces=false,
-    basicstyle=\scriptsize\ttfamily,
-    identifierstyle=\ttfamily,
-    keywordstyle=\ttfamily\color[rgb]{0,0,1},
-    commentstyle=\ttfamily\color[rgb]{0.133,0.545,0.133},
-    stringstyle=\ttfamily\color[rgb]{0.627,0.126,0.941},
-}
-\makeatletter
-\lstdefinelanguage{llvm}{
+
+%\makeatletter
+\lstdefinelanguage{llvm2}{
   morecomment = [l]{;},
   morestring=[b]", 
   sensitive = true,
@@ -84,7 +47,106 @@
   alsoletter={\%},
   keywordsprefix={\%},
 }
-\makeatother
+
+\lstdefinelanguage{llvm}{
+  morecomment = [l]{;},
+  morestring=[b]", 
+  sensitive = true,
+  classoffset=0,
+  keywordstyle=\color[rgb]{0, 0, 1},
+  morekeywords={
+  },
+  classoffset=1, keywordstyle=\color[rgb]{0.228, 0.703, 0.718},
+  keywordstyle=\color{red},
+  commentstyle=\color[rgb]{0.133,0.545,0.133},
+  stringstyle=\color[rgb]{0.627,0.126,0.941},
+  morekeywords={
+    % instructions
+    % terminators
+    ret, br, switch, indirectbr, invoke, resume, unreachable,
+    % binary operations
+    add, fadd, sub, fsub, mul, fmul, udiv, sdiv, fdiv, urem, srem, frem,
+    % bitwise binary operations
+    shl, lshr, ashr, and, or, xor,
+    % vector operations
+    extractelement, insertelement, shufflevector,
+    % aggregate operations
+    extractvalue, insertvalue,
+    % memory access and addressing operations
+    alloca, load, store, fence, cmpxchg, atomicrmw, getelementptr,
+    % conversion operations
+    trunc, zext, sext, fptrunc, fpext, fptoui, fptosi, uitofp, sitofp, ptrtoint,
+    inttoptr, bitcast,
+    % other operations
+    icmp, fcmp, phi, select, call, va_arg, landingpad,
+    % instruction arguments
+    nuw, nsw, exact, acquire, release, acq_rel, seq_cst, singlethread, volatile,
+    xchg, add, sub, and, nand, or, xor, max, min, umax, umin, to, eq, ne, ugt,
+    uge, ult, ule, sgt, sge, slt, sle, false, oeq, ogt, oge, olt, ole, one, ort,
+    ueq, ugt, uge, ult, ule, une, uno, true,  personality, catch, filter,
+    cleanup, inbounds, unwind, label, align, tail, to,
+    % I thought these shouldn't be the same color as %vars, moved from
+    % lower-level keywords
+    define, declare, global, constant,
+    internal, external, private,
+    linkonce, linkonce_odr, weak, weak_odr, appending,
+    common, extern_weak,
+    thread_local, dllimport, dllexport,
+    hidden, protected, default,
+    except, deplibs,
+    volatile, fastcc, coldcc, cc, ccc,
+    x86_stdcallcc, x86_fastcallcc,
+    ptx_kernel, ptx_device,
+    signext, zeroext, inreg, sret, nounwind, noreturn,
+    nocapture, byval, nest, readnone, readonly, noalias, uwtable,
+    inlinehint, noinline, alwaysinline, optsize, ssp, sspreq,
+    noredzone, noimplicitfloat, naked, alignstack,
+    module, asm, align, tail, to,
+    addrspace, section, alias, sideeffect, c, gc,
+    target, datalayout, triple,
+    blockaddress
+  },
+  alsoletter={\%,.},
+  keywordsprefix={\%},
+}
+
+\lstdefinestyle{LLVMstyle}{
+    %keywordstyle=\ttfamily\color[rgb]{0,0,1},
+    %commentstyle=\ttfamily\color[rgb]{0.133,0.545,0.133},
+    %stringstyle=\ttfamily\color[rgb]{0.627,0.126,0.941},
+    %backgroundcolor=\color{backcolour},   
+    %numberstyle=\tiny\color{codegray},
+    %basicstyle=\ttfamily,
+    %breakatwhitespace=false,         
+    %breaklines=true,                 
+    %captionpos=b,                    
+    %keepspaces=true,                 
+    %numbers=left,                    
+    %numbersep=5pt,                  
+    %showspaces=false,                
+    %showstringspaces=false,
+    %showtabs=false,                  
+    %tabsize=2
+    inputencoding=utf8,
+%    backgroundcolor=\color{white},
+    tabsize=2,
+    rulecolor=,
+    upquote=true,
+%    aboveskip={1.5\baselineskip},
+    columns=fixed,
+    showstringspaces=false,
+    extendedchars=true,
+    breaklines=true,
+    prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+    frame=single,
+    showtabs=false,
+    showspaces=false,
+    showstringspaces=false,
+    basicstyle=\scriptsize\ttfamily,
+    identifierstyle=\ttfamily,
+}
+
+%\makeatother
 
 \definecolor{codegreen}{rgb}{0,0.6,0}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
@@ -121,7 +183,7 @@ begin_keywords,`celldefine,`default_decay_time,`default_nettype,`default_trireg_
 \lstdefinestyle{Verilogstyle}{
     backgroundcolor=\color{backcolour},   
     commentstyle=\color{codegreen}\ttfamily,
-    keywordstyle=\color{purple}\ttfamily,
+    keywordstyle=\color{blue}\ttfamily,
     keywordstyle={[2]\color{purple}\ttfamily},
     keywordstyle={[3]\color{magenta}\ttfamily},
     keywordstyle={[4]\color{teal}\ttfamily},
@@ -130,7 +192,7 @@ begin_keywords,`celldefine,`default_decay_time,`default_nettype,`default_trireg_
     stringstyle=\color{red}\ttfamily,
     basicstyle=\scriptsize\ttfamily,
     morecomment=[l][\color{codepurple}\ttfamily]{\#},
-breakatwhitespace=false,         
+    breakatwhitespace=false,         
     breaklines=true,                 
     captionpos=b,                    
     keepspaces=true,                 

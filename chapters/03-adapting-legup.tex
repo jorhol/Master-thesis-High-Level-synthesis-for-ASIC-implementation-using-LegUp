@@ -1,4 +1,4 @@
-\chapter{Resolving issues with LegUp}
+\chapter{Adapting LegUp}
 The main focuses of this project has been to resolve the issues encountered in \cite{holm2015pro}, to make LegUp able to generate Verilog more suited for ASIC implementation and synthesis. This chapter will describe the process of resolving these issues and other alterations that has been made in order to ease the creation of a framework for architectural exploration of hardware.
 \section{Approach}
 In the future works section of the project, two different approaches to resolve the issues were proposed; post-processing and pre-processing. Both approaches have been explored, but the main section of solutions are based on the pre-processing alternative. The two following subsection will present the two approaches and give some reasoning to why one is chosen over the other.
@@ -7,7 +7,7 @@ With the post-processing approach, the idea is to alter the Verilog-code after i
 
 There exist multiple parser tools for Verilog, for instance Verilog-Perl from VeriPool, a Verilog parser library for Perl, and pyverilog, a Hardware Design Processing Toolkit for Python \cite{Takamaeda2015Pyverilog}. These tools can be used to parse the Verilog file, to build module, signal, and port hierarchy, and easily add, alter, or remove objects.
 \subsection{Pre-processing}
-The pre-processing approach involves changing the libraries in LegUp that performes the HLS operations, like allocation, scheduling, RTL-generation and Verilog printing. This requires deep knowledge of the libraries and its connections, to be able to find a good way to change the output. The large libraries is the main drawback of this approach. As LegUp is open-source, the possibilities of this approach are however endless, but getting the necessary knowledge of the libraries takes time.
+The pre-processing approach involves changing the libraries in LegUp that performs the HLS operations, like allocation, scheduling, RTL-generation and Verilog printing. This requires deep knowledge of the libraries and its connections, to be able to find a good way to change the output. The large libraries is the main drawback of this approach. As LegUp is open-source, the possibilities of this approach are however endless, but getting the necessary knowledge of the libraries takes time.
 \subsection{The chosen approach}
 As it looked like the easiest solution, the post-processing alternative were explored first. However, it were soon realised that the things that could be done easily with this approach, also could be done quite easily with the pre-processing approach. Some larger issues, for instance assigning values to outputs, were not easily solvable by using the post-processing method. The focus were therefore directed towards the pre-processing alternative.
 
@@ -17,14 +17,14 @@ LegUp uses TCL commands for setting constraints and configure the HLS process. I
 \begin{verbatim}
 set_parameter PRINT_TOP_MODULE 1
 \end{verbatim}
-The parameter can then be used to decide if the Top-module should be printer:
+The parameter can then be used to decide if the Top-module should be printed:
 \lstset{language=C++,style=Cstyle}
 \begin{lstlisting}
-  if(LEGUP_CONFIG->getParameterInt("PRINT_TOP_MODULE") {
-    printTop();
-  } else {
-    printVerilogWithoutTop();
-  }
+if(LEGUP_CONFIG->getParameterInt("PRINT_TOP_MODULE") {
+  printTop();
+} else {
+  printVerilogWithoutTop();
+}
 \end{lstlisting}
 
 Another example is to use a parameter to set the name of the top-module. This can be used either for naming the top-module, or to select top-module in the simulation-settings. 
@@ -32,20 +32,20 @@ Another example is to use a parameter to set the name of the top-module. This ca
 set_parameter TOP_MODULE_NAME "moduleName"
 \end{verbatim}
 \begin{lstlisting}
-  std::string topModuleName = "top"; // Default name
-  if(LEGUP_CONFIG->getParameter("TOP_MODULE_NAME") {
-    topModuleName = LEGUP_CONFIG->getParameter("TOP_MODULE_NAME");
-  }
+std::string topModuleName = "top"; // Default name
+if(LEGUP_CONFIG->getParameter("TOP_MODULE_NAME") {
+  topModuleName = LEGUP_CONFIG->getParameter("TOP_MODULE_NAME");
+}
 \end{lstlisting}
 In the second example, the getParameter() function will return false if the parameter is not set.
 
 Other TCL-commands can also be defined by adding 
 \begin{lstlisting}
-  Tcl_CreateCommand(interp,
-                    "set_custom_main_function",
-                    set_custom_main_function,
-                    legupConfig,
-                    0);
+Tcl_CreateCommand(interp,
+                "set_custom_main_function",
+                set_custom_main_function,
+                legupConfig,
+                0);
 \end{lstlisting}
 Where the second parameter is the TCL-command and the third parameter is the handler function that will be called when the TCL-command is encountered.
 
@@ -53,80 +53,69 @@ Where the second parameter is the TCL-command and the third parameter is the han
 \item{\textbf{ASIC\_IMPLEMENTATION}} \hfill \\
 This parameter is used to distinguish between the standard version of LegUp and the altered version that will be used in this thesis for generating modules suitable for ASIC implementation. If this parameter is set, all extra features described in the following subsections will be applied to the generated design. If the parameter is not set, the unaltered edition of LegUp will be used to generate the output.
 \item{\textbf{set\_custom\_main\_function}} \hfill \\
-This parameter can be used to define inputs and outputs in the main module, as described in \cref{subsubsec:inoutparameter}. The  
+This parameter can be used to define inputs and outputs in the main module, as described in \cref{subsubsec:inoutparameter}. As this is not a simple TCL-parameters, it takes multiple arguments. The format of the input should be:
+\begin{verbatim}
+set_custom_main_function 
+    input   7:0 inSignalA \
+    input  31:0 inSignalB \
+    output 31:0 outSignal \
+    output  1:0 outSignalValid
+\end{verbatim}
 \item{\textbf{ENCLOSING\_WHILE\_LOOP}} \hfill \\
-Main-function has enclosing while loop (for streaming inputs/outputs). Will generate \textit{iterationFinish}-signal when iteration of while loop is finished,
+Main-function has enclosing while loop (for streaming inputs/outputs). Will generate \textit{iterationFinish}-signal when iteration of while loop is finished.
 \item{\textbf{SEPARATE\_TB\_FILE}} \hfill \\
 Parameter decides if testbench is printed in same or a separate file. The filename of the separate testbench-file will be test\_main.v, according to Nordic's naming standard, but this can easily be changed or made dynamic by setting the constraint \textit{set\_custom\_testbench\_filename}.
 \item{\textbf{SEPARATE\_TB\_FILENAME}} \hfill \\
 Takes testbench filename as parameter and outputs testbench to a file with this name. Will not work if \textit{SEPARATE\_TB\_FILE} is not set. Default is \textit{test\_main.v}
 \item{\textbf{TB\_TESTCASE\_FILE}} \hfill \\
-As described in \cref{subsec:tbgen}, a way to automatically include testcases into the testbench is implemented. This parameter provides the filename of a file containg testcases for the testbench. If the parameter is not set, no testcases will be added to the testbench.
+As described in \cref{subsec:tbgen}, a way to automatically include testcases into the testbench is implemented. This parameter provides the filename of a file containing testcases for the testbench. If the parameter is not set, no testcases will be added to the testbench.
 \item{\textbf{REMOVE\_UNUSED\_LOCAL\_RAMS}} \hfill \\
 By declaring input parameters as volatile, a local RAM will be generated in the main module for each output signal we create. These RAMs is not used for anything useful and can therefore be removed to save area. If set, Local RAMs in main are removed \textit{if} the value stored to the RAM is assigned to an output instead.
 \end{description}
 
-
-
-
 \section{Removing memory controller}
-One of the main issues with using LegUp for 
+One of the main issues with using LegUp for ASIC implementations, is that it generates a global memory-controller for passing data between modules. Both to decrease the overhead area, and to simplify the generated design, it is desirable to avoid this memory controller. A simple solution to this, is to set the parameter \textit{LOCAL\_RAMS} to 1. This will avoid creating the global memory controller, as long as there are no variables used by multiple modules (global variables), or pointers that cannot be connected to a single module after points-to analysis. 
 
 \section{\label{subsec:inoutdecl}Declaring inputs and outputs}
-Each function declared in a C program will be translated into a Verilog-module by LegUp. Since LegUp primarily is designed for implementing hardware accelerators for FPGAs, it does not handle inputs and outputs well to and from the top module. In an ASIC implementation, inputs and outputs are essential to most module design and must therefore be easy to implement. In a C-program written for execution on a computer the input parameters to the main function is defined to be on the form "int main(int argc, char *argv[])". This limits the possibility to declare inputs to the module with any data-type. To solve this problem, the flag \textit{-ffreestanding} has to be passed to the clang compiler frontend of LLVM. The compiler will then consider the C-code to contain a freestanding - not a hosted - environment, and therefore not care about what types of inputs and return values the \textit{main}-function has. In LegUp, the flag can be passed to the compiler by adding it to the variable \textit{CLANG\_FLAG} in the file \textit{Makefile.config}.
-
-The solution that would have been used in a hosted environment is to use pointers as input and output values as pass-by-reference.
+Each function declared in a C program will be translated into a Verilog-module by LegUp. Since LegUp primarily is designed for implementing hardware accelerators for FPGAs, it does not handle inputs and outputs well to and from the top module. In an ASIC implementation, inputs and outputs are essential to most module design and must therefore be easy to implement. In a C-program written for execution on a computer the input parameters to the main function is defined to be on the form "int main(int argc, char *argv[])". This limits the possibility to declare inputs to the module with any data-type. To solve this problem, the flag \textit{-ffreestanding} has to be passed to the clang compiler frontend of LLVM. The compiler will then consider the C-code to contain a freestanding - not a hosted - environment, and therefore not care about what types of inputs and return values the \textit{main}-function has. In LegUp, the flag can be passed to the compiler by adding it to the variable \textit{CLANG\_FLAG} in the file \textit{Makefile.config}. The solution that would have been used in a hosted environment is to use pointers as input and output values as pass-by-reference.
 
 Two different solutions for declaring inputs and outputs are considered and implemented. Both solutions are based on declaring both inputs and outputs as parameters to the main function.
-\subsection{Name prefix}
-The first solution is to use a prefix to distinguish between input and output parameters. To use a prefix that is seldom used in a variable name, the prefix is set to \textit{\_\_out\_}. Previously, LegUp assumed all function parameters were inputs, and added the signals to the RTLModule. This has been altered to check the name of the parameter and add it as an output reg if the name starts with \textit{\_\_out\_} or otherwise, add it as an input.
+\subsection{\label{subsec:inoutprefix}Name prefix}
+The first solution is to use a prefix to distinguish between input and output parameters. To use a prefix that is seldom used in a variable name, the prefix is set to \textit{\_\_out\_}. Previously, LegUp assumed all function parameters were inputs, and added the signals to the RTLModule. This has been altered to check the name of the parameter and add it as an output reg if the name starts with \textit{\_\_out\_} or otherwise, add it as an input. The pseudo-code of how inputs and outputs are handled are shown in \cref{alg:addInOut}. Here we assume that \textit{i} is a function parameter and \textit{rtl} is the RTLModule generated by the \textit{main}-function.
 
-\begin{lstlisting}
-std::string sigName = i->getName();
-if (sigName.find("__out_") == 0) {
-  sigName = sigName.substr(6, std::string::npos);
-  i->setName(sigName);
-  rtl->addOutReg(verilogName(i), RTLWidth(i->getType()));
-  string validSigName = "arg_" + sigName + "_valid";
-  rtl->addOutReg(validSigName);
-} else {
-  rtl->addIn(verilogName(i), RTLWidth(i->getType())); 
-}
-\end{lstlisting}
-The advantage of this method is that it is easy to implement and easy to use, as the user only has to remember the name prefix when writing the functional specification. The name-prefix can also be useful in other sections of the program, as we will see later in section \ref{sec:assValueToOutput}. The disadvantage is that the name prefix needs to be used throughout the program. It would however be preferable to use a temporary variable in the program until the final value is calculated and ready to be assigned to the output. This will reduce the amount of times the name-prefix must be used.
-The name prefix will be stripped by LegUp, making the signal in the final Verilog-module look much cleaner.
+\begin{algorithm}
+  \caption{Pseudo-code of adding 
+  \label{alg:addInOut}}
+  \begin{algorithmic}[1]
+    \Statex
+    \State $sigName \gets i.getName()$
+    \If{$sigName.startWith() = "\_\_out\_"$}
+      \State $sigName \gets sigName.strip(\_\_out\_)$
+      \State $i.setName(sigName)$
+      \State $rtl.addOutReg(i)$
+    \Else
+      \State $rtl.addIn(i)$
+    \EndIf
+  \end{algorithmic}
+\end{algorithm}
+
+The advantage of this method is that it is easy to implement and easy to use, as the user only has to remember the name prefix when writing the functional specification. The name-prefix can also be useful in other sections of the program, as we will see later in section \ref{sec:assValueToOutput}. The disadvantage is that the name prefix needs to be used throughout the program. It would however be preferable to use a temporary variable in the program until the final value is calculated and ready to be assigned to the output. This will reduce the amount of times the name-prefix must be used. The name prefix will be stripped by LegUp, making the signal in the final Verilog-module look much cleaner.
 \subsection{\label{subsubsec:inoutparameter}TCL-command}
-The other alternative is to declare in a TCL-command if each parameter is input or output. This also makes it possible to declare the size of the signal, but LegUp does not allow setting the size of the signals to a size lower than the size of what will be assigned to the signal.
+The other alternative is to use a TCL-command to declare if each parameter is input or output. This also makes it possible to declare the size of the signal, but LegUp does not allow setting the size of a signals to a number of bits, lower than the size of what can be assigned to the signal. This means that if a parameter is declared as an int in the C-program, LegUp does not allow for setting the RTLWidth of the signal to anything below 32 bit.
 
-The TCL-command \textit{set\_custom\_main\_function} described above, creates a vector with objects of the class CustomVerilogIO, each containing one input or output signal to the main module. The parameters can then be added as input or output to the RTLModule based on this information.
-\begin{lstlisting}
-std::vector<CustomVerilogIO> cmIO = LEGUP_CONFIG->getCustomMainIO();
-for (std::vector<CustomVerilogIO>::iterator it = cmIO.begin();
-     it != cmIO.end(); ++it) {
-
-  CustomVerilogIO &cmIO = *it;
-
-  if (cmIO.isInput && (cmIO.name == i->getName().str())) {
-    rtl->addIn(verilogName(i),
-               RTLWidth(cmIO.bitFrom, cmIO.bitTo));
-  } else if (cmIO.name == i->getName().str()) {
-    rtl->addOutReg(verilogName(i),
-                   RTLWidth(cmIO.bitFrom, cmIO.bitTo));
-  }
-}
-\end{lstlisting}
+Inspiration for this method comes from the parameter \textit{set\_custom\_verilog\_function} already present in LegUp. This is used to add custom Verilog functions to the design. The TCL-command \textit{set\_custom\_main\_function} described above were added, that creates a vector with objects of the class CustomVerilogIO, each containing one input or output signal to the main module. By looping over the vector, each parameter can be added as an input or an output to the RTLModule, based on this information. This part is quite similar to the above described name-prefix method.
 
 \section{\label{sec:assValueToOutput}Assigning values to outputs}
 In \cref{subsec:inoutdecl} two methods of declaring parameters as outputs in the generated module were presented. Unfortunately, assigning values to a input parameter is undefined behaviour in C. This means that even though the compiler will generate LLVM IR that perform this operations, they are not handled in the LegUp backend pass that transforms the IR into Verilog. The result is that a signal declared as output is assigned to a local RAM module and no assignments to the output exists.
 
-To overcome this issue, the idea to look at the LLVM IR code to see if any information about assignment could be gathered here and used in LegUp to assign the correct values to the output were brought up. 
+The idea to look at the LLVM IR code were brought up, to see if any information about assignment could be gathered here and used in LegUp to assign the correct values to the output. To show how this information can be used to assign values to outputs, an example should be appropriate. In \cref{lst:cllvmirparsercode}, a very simple C-program is listed. When running the pure-HW flow of LegUp, the human readable format of the LLVM IR code is output to a file called \%designName\%.ll.
 \lstset{language=C,style=Cstyle}
 \begin{lstlisting}[caption={Simple C-code example for LLVM IR parsing},label=lst:cllvmirparsercode]
 void main(int inDataA, int inDataB, volatile int __out_outData) {
-    while (1) {
-        __out_outData = inDataA * inDataB;
-    }
-    return;
+  while (1) {
+    __out_outData = inDataA * inDataB;
+  }
+  return;
 }
 \end{lstlisting}
 \lstset{language=LLVM,style=LLVMStyle}
@@ -144,13 +133,13 @@ define void @main(i32 %inDataA, i32 %inDataB, i32 %__out_outData) #0 {
   ret void
 }
 \end{lstlisting}
-Lets analyze the LLVM IR code output from compilation, shown in \cref{lst:llvmirparsercode}. On line 2 the temporary register \%1 is created. On line 3, the input parameter declared as volatile, \textit{\_\_out\_outData}, is stored to this register. On line 7, the multiplication calculation of the inputs inDataA and inDataB is stored to a new temporary register \%3. On line 8, the content of register \%3 is stored back to register \%1. This information can be exploited to create a program that traces stores, back to the original input parameter. In this example, we can easily see that the multiplication calculation easily can be traced back to the output \textit{\_\_out\_outData}, but in more complex programs, this tracing might not be that easily done. The solution would be to create a script that parses through the IR code and makes these connections for us. 
+Lets analyze the LLVM IR code output from compilation, shown in \cref{lst:llvmirparsercode}. On line 2 the temporary register \%1 is created. On line 3, the input parameter declared as volatile, \textit{\_\_out\_outData}, is stored to this register. On line 7, the multiplication calculation of the inputs inDataA and inDataB is stored to a new temporary register \%3. On line 8, the content of register \%3 is stored back to register \%1. This information can be exploited to create a program that traces stores, back to the original input parameter. In this example, we can easily see that the multiplication calculation easily can be traced back to the output \textit{\_\_out\_outData}, but in more complex programs, this tracing might not be that easily done. The solution would be to create a script that parses through the IR code and makes these connections for us. Notice that the parameter that should be an output \textbf{needs} to be declared as \textit{volatile}, if not the first allocation and store operations will be removed by link-time optimization passes.
 
 When LegUp generates signals, they will be named by the convention \%functionName\%\_\%labelNumber\%\_registerNumber\%. This means that the example above will create the signals (or RAM modules for parameters and arrays) \textit{main\_0\_1} from line 2 and \textit{main\_2\_3} from line 7.
 \subsection{LLVM IR assignment parser program}
 A program were created to parse the LLVM IR generated by the compilation. This section will explain in words and pseudo-code how the program works. The full source code of the parser program is included in \ref{lst:llvmirparserprogramcode} in the appendix. The program takes two command-line arguments when called, name of the input file and name of the output file. The input file should be the final LLVM IR file generated by LegUp, named \textit{\%designName\%.ll}. The output can be what you like, but the default file-name used in LegUp for reading of the output is \textit{LLVMParsed.log}. The program consist of two parts, the first part handles the reading and parsing of the input file, the second part is handling the generating of the output file. The program is created to only care about the main-function, as this is the module where it is vital to have multiple output signals. The program can easily be changed by altering the source code, if found necessary at a later point.
 
-A pesudo-code describing the first part of the program is shown in \cref{alg:llvmparserpart1}. The parser starts by looking for the main-function. When in the main-function, the program looks for lines containing stores or labels. If a store is found, the source and target register of the store is stored in a vector, together with the current label. If a new label is found, the label is set as the current label.
+A pesudo-code describing the first part of the program is shown in \cref{alg:llvmparserpart1}. The parser starts by looking for the main-function. When in the main-function, the program looks for lines containing stores or labels. If a store is found, the source and target register of the store, together with the current label, is stored in separate vectors. If a new label is found, the label is set as the current label.
 
 \algnewcommand\algorithmicto{\textbf{to}}
 \algnewcommand\algorithmicand{\textbf{and}}
@@ -196,11 +185,7 @@ A pesudo-code describing the second part of the program is shown in \cref{alg:ll
     \caption{Caption}
     \label{tab:llvmirparservectors}
 \end{table}
-By comparing the first target against the second target in the table, it can easily be seen that the second source is stored to the same target as the first source. The output format is given by:
-\verb!"sources[i] sources[j] labels[j] labels[i] targets[i]"!
-The output from the above example will then be:
-\verb!"outData 3 2 0 1"!.
-This implies that the signal \textit{main\_2\_3} should be assigned to the output \textit{outData}. The two last values, 0 and 1, are included as they will be used in a trick in \cref{subsec:assigningoutputsignals} to simplify the process of assigning signals to output ports.
+By comparing the first target against the second target in the table, it can easily be seen that the second source is stored to the same target as the first source. Notice that this program uses the name-prefix described in \cref{subsec:inoutprefix}. This method of declaring outputs is therefore required for the parser program to work. 
 \begin{algorithm}
   \caption{Pseudo-code of output file handling in LLVM IR parser program
   \label{alg:llvmparserpart2}}
@@ -228,6 +213,17 @@ This implies that the signal \textit{main\_2\_3} should be assigned to the outpu
     \EndIf
   \end{algorithmic}
 \end{algorithm}
+
+The program will output the result of the tracing into the file with the name given as parameter to the program, with the given format:
+
+\verb!"sources[i] sources[j] labels[j] labels[i] targets[i]"!
+
+The output from the above example will then be:
+
+\verb!"outData 3 2 0 1"!.
+
+This implies that the signal \textit{main\_2\_3} should be assigned to the output \textit{outData}. The two last values, 0 and 1, are included as they will be used in a trick in \cref{subsec:assigningoutputsignals} to simplify the process of assigning signals to output ports.
+
 Execution of the program is added to the common Makefile, \textit{Makefile.common}, just before running the LegUp backend pass that generated Verilog output. The program is called by the line:
 \begin{verbatim}
 $(LEVEL)/LlvmParser.run $(NAME).ll LlvmParsed.log
@@ -245,8 +241,6 @@ For every parameter to the function, the compiler will allocate a register and s
                 \caption{What we want to achieve}
   \label{fig:assignoutputs1}
        \end{subfigure}%
-%no, don't use ~!           ~ %add desired spacing between images, e. g. ~, \quad, \qquad etc.
-      %(or a blank line to force the subfigure onto a new line)
     \hfill
         \begin{subfigure}{0.49\textwidth}\centering
                     \includegraphics[width=\linewidth]{figs/OutputAssignment2.png}
@@ -266,10 +260,9 @@ For every parameter to the function, the compiler will allocate a register and s
   \label{fig:assignoutputs4}
        \end{subfigure}%
 
-\caption{4 figures}
-\label{fig:assigningoutputs}
+\caption{\label{fig:assigningoutputs}4 figures}
  \end{figure}
-\cref{fig:assigningoutputs} tries to illustrate the problem with assigning outputs. In \cref{fig:assignoutputs1}, the module we would expect from the C-code in \cref{} is shown. The two inputs are multiplied together and output to outData. In reality, what happens in the generated Verilog is shown in \cref{fig:assignoutputs2} and in \cref{fig:assignoutputs3}, when extended with an extra ADD module that stores to \textit{outData}. Instead of assigning the calculated values to the output, they are stored in a RAM module. The solution to this problem is shown in \cref{fig:assignoutputs4}. By "hijacking" the input signal to the RAM module and assigning it to the output, \textit{outData}, we get the expected functionality. 
+Figure \ref{fig:assigningoutputs} tries to illustrate the problem with assigning outputs. In \cref{fig:assignoutputs1}, the module we would expect from the C-code in \cref{lst:cllvmirparsercode} is shown. The two inputs are multiplied together and output to outData. In reality, what happens in the generated Verilog is shown in \cref{fig:assignoutputs2} and in \cref{fig:assignoutputs3}, when extended with an extra ADD module that stores to \textit{outData}. Instead of assigning the calculated values to the output, they are stored in a RAM module. The solution to this problem is shown in \cref{fig:assignoutputs4}. By "hijacking" the input signal to the RAM module and assigning it to the output, \textit{outData}, we get the expected functionality. 
 
 The RAM module will be named by the same convention as signals, naming the RAM in this module \textit{main\_0\_1}. The dataIn signal of the RAM module is named \%ramName\%\_in\_a. This is the signal we want to "hijack". The "hijacking" is performed as described in \cref{alg:assignoutputsignals}. The name of the output ports are read from the file output from the LLVM IR parser program, together with the name of the corresponding RAM modules. For every output port, each driver-condition pair stored to the RAM module is added as a conditional driver to the output port.
 \makeatletter
@@ -294,7 +287,7 @@ The RAM module will be named by the same convention as signals, naming the RAM i
 \end{algorithm}
 
 \subsection{Removing local RAMs}
-After reassigning the RAM stores to the output port, the generated RAM module corresponding to the input parameters are no longer needed. The ram modules can be removed to save area and power consumption. To make this operation optional, the TCL-parameter \textit{REMOVE\_UNUSED\_LOCAL\_RAMS} were added. By setting this parameter, the local RAM modules will be removed. All RAMs local to a module is stored together with its corresponding function (from the C-code) in a variable, \textit{	isLocalFunctionRam}. When the RAM is removed, it is simply removed from this variable. In addition to removing the RAM module, all signals to and from the RAM needs to be removed as well. Notice that only the RAMs generated by output parameters are removed from the main module. RAM modules can also be generated by arrays and other large data structures, but these will not be removed in any cases.
+After reassigning the RAM stores to the output port, the generated RAM module corresponding to the input parameters are no longer needed. The ram modules can be removed to save area and power consumption. To make this operation optional, the TCL-parameter \textit{REMOVE\_UNUSED\_LOCAL\_RAMS} were added. By setting this parameter, the local RAM modules will be removed. All RAMs local to a module is stored together with its corresponding function (from the C-code) in a variable, \textit{isLocalFunctionRam}. When the RAM is removed, it is simply removed from this variable. In addition to removing the RAM module, all signals to and from the RAM needs to be removed as well. Notice that only the RAMs generated by output parameters are removed from the main module. RAM modules can also be generated by arrays and other large data structures, but these will not be removed in any cases.
 
 \section{Streaming inputs/outputs}
 For most module designs to be useful, fast and , it must be able to continuously take new inputs and generate outputs, without having to start and stop the entire module each time, with all the overhead in time this would require. The way LegUp is designed, functions are used as hardware accelerators, meaning it gets some input, performs some calculations and the outputs the result. The module is then finished and will not run again until next time the accelerated function is called. For this approach to work for an ASIC implementation, a top module would need to be created to assign new inputs and start the module again once it is finished with the last iteration. This would create a lot of unwanted overhead, both in size and speed. A better solution would therefore be to add a while loop inside the main function of the C program to make the program run continuously.

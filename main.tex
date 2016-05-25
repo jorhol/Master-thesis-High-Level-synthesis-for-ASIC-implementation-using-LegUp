@@ -12,7 +12,7 @@
 \crefformat{figure}{#2figure~#1#3}
 
 %Configure listings syntax highlighting
-
+\setcounter{tocdepth}{1}
 
 
 \title{High-Level Synthesis for \newlinetitle Application-Specific Integrated Circuit \newlinetitle Implementation using LegUp} % The title of your assignement; NB use \newlinetitle to start a newline
@@ -91,7 +91,7 @@
 
 
 
-
+\lstset{language=LLVM,style=LLVMStyle}
 
 
 %\printglossaries%[title=List of Acronyms,type=\acronymtype] % prints just the list of acronyms
@@ -105,8 +105,8 @@
 \pagestyle{ruled}
 \include{chapters/01-introduction}
 \include{chapters/02-background}
-\include{chapters/03-methodology}
-\include{chapters/04-resolving-issues}
+\include{chapters/03-adapting-legup}
+\include{chapters/04-tool-flow-example}
 \include{chapters/05-creating-the-framework}
 \include{chapters/06-framework-results}
 \include{chapters/07-discussion}
