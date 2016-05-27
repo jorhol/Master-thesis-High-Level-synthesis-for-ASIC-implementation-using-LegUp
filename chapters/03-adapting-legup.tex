@@ -9,7 +9,7 @@ There exist multiple parser tools for Verilog, for instance Verilog-Perl from Ve
 \subsection{Pre-processing}
 The pre-processing approach involves changing the libraries in LegUp that performs the HLS operations, like allocation, scheduling, RTL-generation and Verilog printing. This requires deep knowledge of the libraries and its connections, to be able to find a good way to change the output. The large libraries is the main drawback of this approach. As LegUp is open-source, the possibilities of this approach are however endless, but getting the necessary knowledge of the libraries takes time.
 \subsection{The chosen approach}
-As it looked like the easiest solution, the post-processing alternative were explored first. However, it were soon realised that the things that could be done easily with this approach, also could be done quite easily with the pre-processing approach. Some larger issues, for instance assigning values to outputs, were not easily solvable by using the post-processing method. The focus were therefore directed towards the pre-processing alternative.
+As it looked like the easiest solution, the post-processing alternative were explored first. However, it were soon realised that the things that could be done easily with this approach, also could be done quite easily with the pre-processing approach. Some larger issues, for instance assigning values to outputs, were not easily solvable by using the post-processing method. The focus were therefore directed towards the pre-processing alternative. One large advantage of this approach is that the original functionality of LegUp can be keept, while adding new functionality. The switching between original and altered versions are done using TCL-commands.
 
 \section{TCL commands}
 LegUp uses TCL commands for setting constraints and configure the HLS process. In order to not clutter the original implementation, and to provide additional functionality to LegUp, some new commands were created. New TCL-parameters can easily be added to LegUp by adding the parameter name to the array \textit{validParameters} and increasing the parameter \textit{NUM\_PARAMETERS} in the file \textit{LegupConfig.cpp}. The value of the parameter can then be read using the function call \verb!LEGUP\_CONFIG->getParameter("\%parameterName\%")! to get a string, or \verb!LEGUP\_CONFIG->getParameterInt("\%parameterName\%")! to get an integer. LegupConfig.h must be included to get access to LEGUP\_CONFIG. The most common use of TCL-parameters are to check if a parameter is set, and perform some action if it is, or to use the parameter to set a variable. An example could be a parameter that decides if a designated top-module shall be generated or not. The parameter is define by adding the below line to the constraint file:
@@ -47,7 +47,7 @@ Tcl_CreateCommand(interp,
                 legupConfig,
                 0);
 \end{lstlisting}
-Where the second parameter is the TCL-command and the third parameter is the handler function that will be called when the TCL-command is encountered.
+where the second parameter is the TCL-command and the third parameter is the handler function that will be called when the TCL-command is encountered. In the handler function, arguments from the .tcl-file can be used to configure LegUp. As it support multiple arguments, more advanced configurations can be performed with this alternative. The parameters that has been added to LegUp is described below.
 
 \begin{description}
 \item{\textbf{ASIC\_IMPLEMENTATION}} \hfill \\
@@ -64,17 +64,20 @@ set_custom_main_function
 \item{\textbf{ENCLOSING\_WHILE\_LOOP}} \hfill \\
 Main-function has enclosing while loop (for streaming inputs/outputs). Will generate \textit{iterationFinish}-signal when iteration of while loop is finished.
 \item{\textbf{SEPARATE\_TB\_FILE}} \hfill \\
-Parameter decides if testbench is printed in same or a separate file. The filename of the separate testbench-file will be test\_main.v, according to Nordic's naming standard, but this can easily be changed or made dynamic by setting the constraint \textit{set\_custom\_testbench\_filename}.
+Parameter decides if testbench is printed in same file as design or in a separate file. The filename of the separate testbench-file will be test\_main.v, according to Nordic's naming standard, but this can easily be changed or made dynamic by setting the constraint \textit{set\_custom\_testbench\_filename}.
 \item{\textbf{SEPARATE\_TB\_FILENAME}} \hfill \\
-Takes testbench filename as parameter and outputs testbench to a file with this name. Will not work if \textit{SEPARATE\_TB\_FILE} is not set. Default is \textit{test\_main.v}
+Takes testbench filename as parameter and changes the default filename of the testbench output file to this name. Will not work if \textit{SEPARATE\_TB\_FILE} is not set.
 \item{\textbf{TB\_TESTCASE\_FILE}} \hfill \\
-As described in \cref{subsec:tbgen}, a way to automatically include testcases into the testbench is implemented. This parameter provides the filename of a file containing testcases for the testbench. If the parameter is not set, no testcases will be added to the testbench.
+This parameter provides the filename of a file containing testcases for the testbench. The testcases will be automatically included into the testbench, as described in \cref{subsec:tbgen}. If the parameter is not set, no testcases will be added to the testbench.
 \item{\textbf{REMOVE\_UNUSED\_LOCAL\_RAMS}} \hfill \\
-By declaring input parameters as volatile, a local RAM will be generated in the main module for each output signal we create. These RAMs is not used for anything useful and can therefore be removed to save area. If set, Local RAMs in main are removed \textit{if} the value stored to the RAM is assigned to an output instead.
+By declaring input parameters as volatile, a local RAM will be generated in the main module for each output signal we create. These RAMs is not used for anything useful and can therefore be removed to save area. If set, local RAMs in \textit{main} are removed \textbf{if} the value stored to the RAM is assigned to an output instead.
 \end{description}
 
+\section{\label{sec:removingmodules}Removing top-level and FPGA-specific modules}
+As described in \cite{holm2015pro}, the output Verilog contains many module declarations not required or wanted in an ASIC implementation. This includes the module \textit{top}, \textit{memory\_controller}, \textit{circuit\_start\_control}, \textit{hex\_digits}, \textit{\%board\%} and \textit{main\_tb}. The modules \textit{memory\_controller} and \textit{main\_tb} is discussed in sections below, but it is desired to remove the other modules. The modules could easily be removed by parsing the generated Verilog-file, but using TCL-parameters, the output is easily controlled in the VerilogWriter library of LegUp. When the parameter \textit{ASIC\_IMPLEMENTATION} is set, none of these modules are printed to the generated Verilog file.
+
 \section{Removing memory controller}
-One of the main issues with using LegUp for ASIC implementations, is that it generates a global memory-controller for passing data between modules. Both to decrease the overhead area, and to simplify the generated design, it is desirable to avoid this memory controller. A simple solution to this, is to set the parameter \textit{LOCAL\_RAMS} to 1. This will avoid creating the global memory controller, as long as there are no variables used by multiple modules (global variables), or pointers that cannot be connected to a single module after points-to analysis. 
+One of the main issues with using LegUp for ASIC implementations, is that it generates a global memory-controller for passing data between modules. If using the global memory controller, values has to be added to the memory prior to the run or during the run, generating a need for extra logic handling these process as well as additional timing requirements. Both to decrease the overhead area, and to simplify the generated design, it is desirable to avoid this memory controller. A simple solution to this, is to set the parameter \textit{LOCAL\_RAMS} to 1. This will avoid creating the global memory controller, as long as there are no variables used by multiple modules (global variables), or pointers that cannot be connected to a single module after points-to analysis. Notice that no check on whether or not the memory controller is implemented in the design exist. Typically the memory controller will be instantiated in the \textit{top}-module, but as described in \cref{sec:removingmodules} this module is removed when the parameter \textit{ASIC\_IMPLEMENTATION} is set. This leads to no connections between the \textit{main}-module and the RAM-modules in the global memory controller exists, resulting in a failing circuit. It is thus important to check that the global memory controller is not added to the design. A check for this could be implemented easily in the framework script described in \cref{sec:hlsscript}, by using the tool \textit{grep} to search for the line "\verb!module memory_controller!" in the generated Verilog-file.
 
 \section{\label{subsec:inoutdecl}Declaring inputs and outputs}
 Each function declared in a C program will be translated into a Verilog-module by LegUp. Since LegUp primarily is designed for implementing hardware accelerators for FPGAs, it does not handle inputs and outputs well to and from the top module. In an ASIC implementation, inputs and outputs are essential to most module design and must therefore be easy to implement. In a C-program written for execution on a computer the input parameters to the main function is defined to be on the form "int main(int argc, char *argv[])". This limits the possibility to declare inputs to the module with any data-type. To solve this problem, the flag \textit{-ffreestanding} has to be passed to the clang compiler frontend of LLVM. The compiler will then consider the C-code to contain a freestanding - not a hosted - environment, and therefore not care about what types of inputs and return values the \textit{main}-function has. In LegUp, the flag can be passed to the compiler by adding it to the variable \textit{CLANG\_FLAG} in the file \textit{Makefile.config}. The solution that would have been used in a hosted environment is to use pointers as input and output values as pass-by-reference.
@@ -182,7 +185,7 @@ A pesudo-code describing the second part of the program is shown in \cref{alg:ll
       3 & 1 & 2 \\
     \bottomrule
     \end{tabular}
-    \caption{Caption}
+    \caption{Vector values after parser run}
     \label{tab:llvmirparservectors}
 \end{table}
 By comparing the first target against the second target in the table, it can easily be seen that the second source is stored to the same target as the first source. Notice that this program uses the name-prefix described in \cref{subsec:inoutprefix}. This method of declaring outputs is therefore required for the parser program to work. 
@@ -260,7 +263,7 @@ For every parameter to the function, the compiler will allocate a register and s
   \label{fig:assignoutputs4}
        \end{subfigure}%
 
-\caption{\label{fig:assigningoutputs}4 figures}
+\caption{\label{fig:assigningoutputs}Problem with assigning values to output}
  \end{figure}
 Figure \ref{fig:assigningoutputs} tries to illustrate the problem with assigning outputs. In \cref{fig:assignoutputs1}, the module we would expect from the C-code in \cref{lst:cllvmirparsercode} is shown. The two inputs are multiplied together and output to outData. In reality, what happens in the generated Verilog is shown in \cref{fig:assignoutputs2} and in \cref{fig:assignoutputs3}, when extended with an extra ADD module that stores to \textit{outData}. Instead of assigning the calculated values to the output, they are stored in a RAM module. The solution to this problem is shown in \cref{fig:assignoutputs4}. By "hijacking" the input signal to the RAM module and assigning it to the output, \textit{outData}, we get the expected functionality. 
 
@@ -290,81 +293,71 @@ The RAM module will be named by the same convention as signals, naming the RAM i
 After reassigning the RAM stores to the output port, the generated RAM module corresponding to the input parameters are no longer needed. The ram modules can be removed to save area and power consumption. To make this operation optional, the TCL-parameter \textit{REMOVE\_UNUSED\_LOCAL\_RAMS} were added. By setting this parameter, the local RAM modules will be removed. All RAMs local to a module is stored together with its corresponding function (from the C-code) in a variable, \textit{isLocalFunctionRam}. When the RAM is removed, it is simply removed from this variable. In addition to removing the RAM module, all signals to and from the RAM needs to be removed as well. Notice that only the RAMs generated by output parameters are removed from the main module. RAM modules can also be generated by arrays and other large data structures, but these will not be removed in any cases.
 
 \section{Streaming inputs/outputs}
-For most module designs to be useful, fast and , it must be able to continuously take new inputs and generate outputs, without having to start and stop the entire module each time, with all the overhead in time this would require. The way LegUp is designed, functions are used as hardware accelerators, meaning it gets some input, performs some calculations and the outputs the result. The module is then finished and will not run again until next time the accelerated function is called. For this approach to work for an ASIC implementation, a top module would need to be created to assign new inputs and start the module again once it is finished with the last iteration. This would create a lot of unwanted overhead, both in size and speed. A better solution would therefore be to add a while loop inside the main function of the C program to make the program run continuously.
+For most module designs to be useful, fast and , it must be able to continuously take new inputs and generate outputs, without having to start and stop the entire module each time, with all the overhead in time this would require. The way LegUp is designed, functions are used as hardware accelerators, meaning it gets some input, performs some calculations and then outputs the result. The module is then finished and will not run again until next time the accelerated function is called. For this approach to work for an ASIC implementation, a top module would need to be created to assign new inputs and start the module again once it is finished with the last iteration. If the output-value is used in the next run, a feedback loop needs to be added to pass the result back to the new inputs. The concept is shown in \cref{fig:steamininputstop}. This solution would be hard to implement and would create extra overhead, both in terms of speed and area of the design. 
 
-With this solution some new issues arise. 
-First we need a way to stop the module if all calculations are finished. This can easily be handled by adding a input parameter to the main function in the C-program, lets call it done, which is used as condition for running the while-loop. This parameter will then correspond to a signal in the Verilog-module that can be used to terminate the module. No alterations to LegUp is performed to resolve this issue, as it can be resolved manually by the user. This signal could not be added by LegUp, as it would require major alterations to the generated data-flow.
+\begin{figure}[hbpt]
+\centering
+\includegraphics[width=\textwidth]{../figs/StreamingInputs.png}
+\caption{\label{fig:steamininputstop}LLVM's three-phase compiler structure \cite{llvmarch}.}
+\end{figure}
+
+A better solution would therefore be to add a while loop inside the main function of the C program to make the program run continuously. With this solution some new issues arise. First we need a way to stop the module if all calculations are finished. This can easily be handled by adding a input parameter to the main function in the C-program, lets call it done, which is used as condition for running the while-loop. This parameter will then correspond to a signal in the Verilog-module that can be used to terminate the module. No alterations to LegUp is performed to resolve this issue, as it can be resolved manually by the user. This signal could be integrated to the Verilog generation in LegUp, but this would require major alterations to the libraries and the generated data-flow.
 
 Secondly, we need a way to know when an output has valid data. A simple solution here is to generate a valid-flag for each output signal. These flags are created simultaneously with the outputs being connected to the driving signals, as described in \ref{sec:assValueToOutput}. The signals shall be valid only in the first clock cycle after the output signal has changed. To achieve this, two condition signals has to be created, one when the output is valid, and one when the output is not valid. The valid condition shall be set in any state where the output signal is assigned, i.e. the conditions gathered from the RAM module \textit{dataIn}-signal, and not valid in all other states. To create the valid-signal is straightforward, by adding the conditions from the RAM signal. To create the not valid signal are a bit more tricky. By creating an RTLOp-signal, AND-ing together all the valid states, and creating a second RTLOp-signal NOT-ing the first RTLOp signal, we will have the desired signals. The tricky part arises from the AND operation only being able to take two operands, making it hard to create code handling special cases of few and odd number of valid states. The source code of how this is handled is included in \cref{sec:validsinglssourcecode}.
 
-The third and final issue we need to handle is that we need a way t know when an iteration of the loop is finished. This \textit{iterationFinish}-flag should be set in the state preceding the final state of the FSM.
+As each output can be valid at different times, and also multiple times during a loop, a third issue needs to be handled. A way t know when an iteration of the loop is finished has to be implemented. A flag, \textit{iterationFinish}, can be added by setting the parameter \textit{ENCLOSING\_LOOP} in the constraint file. The flag will be set each time the loop condition-check is performed (except the first time). If the code is divided into three parts, pre-loop, loop, and post-loop, the implementation of this solution can be simplified a bit. By not allowing any operations, except return, to be executed in the post-loop part, as shown in \cref{lst:enclosingloopc}, the flag needs only be set in the state preceding the final state of the FSM.
 \lstset{language=C,style=Cstyle}
-\definecolor{LightGray}{gray}{0.9}
-\begin{listing}[ht]
-\begin{minted}
-[
-breaklines,
-%frame=lines,
-frame=single,
-%framesep=2mm,
-baselinestretch=1.2,
-bgcolor=LightGray,
-fontsize=\footnotesize,
-linenos,
-tabsize=2,
-]
-{cpp}
-RTLSignal *interationFinish = rtl->addOutReg("interationFinish");
-
-connectSignalToDriverInState(interationFinish, ONE, (--fsm->end())->getPrevNode());
-interationFinish->addCondition(rtl->addOp(RTLOp::Not)->setOperands(interationFinish ->getCondition(0)), ZERO);
-\end{minted}
-\caption{Example with line numbers enabled}
-\end{listing}
-\begin{lstlisting}
-RTLSignal *interationFinish = rtl->addOutReg("interationFinish");
-
-connectSignalToDriverInState(interationFinish, ONE, (--fsm->end())->getPrevNode());
-interationFinish->addCondition(rtl->addOp(RTLOp::Not)->setOperands(interationFinish->getCondition(0)), ZERO);
-\end{lstlisting}
-\begin{lstlisting}[caption={FIR-filter implemented in C},label=lst:firfilterc]
+\begin{lstlisting}[caption={Sectioning of a program with enclosing while-loop},label=lst:enclosingloopc]
 void main( int done ) {
-  // Variable setup etc. can be done here.
+  //Pre-loop: Variable setup etc. can be done here.
   while(done == 0) {
-    // Module operations are performed here
+    //Loop: Functional operations are performed here
   }
-  // No operations can be done here.
+  //Post-loop: No operations can be done here.
   return;
 }
 \end{lstlisting}
+The \textit{iterationFinish}-flag is set to zero in all other states. This is done by adding an RTLOp-signal NOT-ing the condition for setting the flag high. This RTLOp-signal is added as a conditional for driving the flag low. The source code of this is listed in \cref{sec:iterationfinishsourcecode}.
+
+\section{Signal sizes}
+A problem with writing the functional specification in C is that C does not support bit-sizes well. Data types of sizes 8, 16, 32 and 64 bits are defined, but if you want to define a signal size of 10 bits, like you often do in hardware design, this is not possible. The problem with over-sized signal sizes is that larger circuits will be generated in order to handle the calculation of the expected extra bits. Two solutions were looked upon for solving this issue; bit-packed structs and bit-width attributes. In C it is supported to define a variable in a struct to be any given number of bits. The thought behind this feature is probably to allow storing more small variables in the memory space occupied by the entire struct. In the example shown in \cref{lst:structpacking} the struct \textit{s} will occupy 12 bytes, as one int equals 4 bytes, while the struct \textit{t} will occupy 3 bytes, as the total defined bit-width is 23 bits.
+\begin{lstlisting}[caption={Struct bit-packing example},label=lst:structpacking]
+struct s {
+  int a;
+  int b;
+  int c;
+}__attribute__((packed));
+
+struct t {
+  int a:1;
+  int b:15;
+  int c:7;
+}__attribute__((packed));
+\end{lstlisting}
+There are two issues with this solution; assigning values to a variable in a struct takes much more typing than other variables, even if the struct only contains a single variable, and structs are not supported by the inferred RAMs generated by LegUp. This means that if structs are used in the design, \textit{altsyncram}-modules are generated in place of inferred RAMs.
+
+The other alternative that has been explored is to use a attribute that sets the bit-width of a variable. By adding the attribute \verb!__attribute__((bitwidth(N)))! to the end of the variable declaration, where \verb!N! is the number of bits in the signal, the compiler can define the signal size based on this attribute. The implementation of this attribute were suggested as an addition to \textit{llvm-gcc}, the GCC frontend compiler for LLVM, in 2007 \cite{bitwidthattr}, but unfortunately it were discarded in 2010. This attribute would allow for defining new data types for each size, and using them as standard data types:
+\begin{lstlisting}
+typedef int __attribute__((bitwidth(2))) int2;
+typedef int __attribute__((bitwidth(4))) int4;
+typedef int __attribute__((bitwidth(25))) int25;
+
+int2 a = 3;
+int4 b = 8;
+int25 c = 2502;
+\end{lstlisting}
+which would be translated into the following in the LLVM IR:
+\begin{lstlisting}
+@a = global i2 3, align 4
+@b = global i4 8, align 4
+@c = global i25 2502, align 4
+\end{lstlisting}
+The align value could be lower, depending on the number of bits/bytes allocated to each temporary register. This solution is possible to implement in theory, but it would require changing both the clang compiler frontend for LLVM and the LegUp backend pass. Due to the estimated amount of time this alterations would require, this issue have not been resolved. For this thesis it is not vital that we can set exact signal sizes, as long as we use the same sizes in both C and Verilog code to get a fair comparison.
 
 \section{\label{subsec:tbgen}Testbench generation}
-LegUp did generate a basic testbench shell, but this were very static and incorporated into the same file as the module design, making it impractical to use in Nordic's toolflow. The generated testbench consisted of a testbench module, main\_tb, which instantiate the top module, \textit{top}, and sets reset, start and waitrequest flags. The input and output signals in the top module does not contain custom signals from the main module, and in an ASIC implementation we are not interested in the memory controller and additional modules declared/instantiated in the top module. The solution then, became to instantiate the main module instead and add each input or output by iterating over the ports in the main module.
+LegUp did generate a basic testbench shell, but this were very static and incorporated into the same file as the module design, making it impractical to use in Nordic's toolflow. The generated testbench consisted of a testbench module, main\_tb, which instantiate the top module, \textit{top}, and sets \textit{reset}, \textit{start} and \textit{waitrequest} flags. The input and output signals in the top module does not contain custom signals from the main module, and in an ASIC implementation we are not interested in the memory controller and additional modules declared/instantiated in the top module. The solution then, became to instantiate the main module instead and add each input or output by iterating over the ports in the \textit{main}-module. The source code of how the testbench-generation is performed is listed in \cref{sec:tbgenerationsourcecode} in the appendix.
 
-\begin{lstlisting}
-RTLModule *t = m->addModule("main", "main_inst");
-if (LEGUP_CONFIG->getParameterInt("ASIC_IMPLEMENTATION")) {
-  RTLModule *rtl = alloc->getModuleForFunction(alloc->getModule()->getFunction("main"));
-  if (rtl->getName().compare("main") == 0) {
-    for (RTLModule::const_signal_iterator i = rtl->port_begin(), e = rtl->port_end(); i != e; ++i) {
-      const RTLSignal *s = *i;
-      RTLSignal *d;
-      string type = s->getType();
-      if (!type.empty()) {
-        if (type.compare(0, 6, "output") == 0) {
-          d = m->addWire(s->getName(), s->getWidth());
-          t->addOut(s->getName(), s->getWidth())->connect(d);
-        } else {
-          d = m->addReg(s->getName(), s->getWidth());
-          t->addIn(s->getName(), s->getWidth())->connect(d);
-        }
-      }
-    }
-  }
-}
-\end{lstlisting}
-
-As the testbench does not come with any form of testcases or applied signals, the testbench generater is extended to input Verilog code from a file specified by the TCL-parameter \textit{TB\_TESTCASE\_FILE}. This allows the user to specify testcases in this file, and it will automatically be inserted into the testbench file inside the testbench module. The code will be placed inside the module, but not inside any procedural blocks. This allows the user to add the preferred procedural block in the specified testcase file. An example testcase file can then be:
+As the testbench does not come with any form of testcases or applied signals, the testbench generator is extended to input Verilog code from a file specified by the TCL-parameter \textit{TB\_TESTCASE\_FILE}. This allows the user to specify testcases in this file, and it will automatically be inserted into the testbench file inside the testbench module. The code will be placed inside the module, but not inside any procedural blocks. This allows the user to add the preferred procedural block in the specified testcase file. An example testcase file can then be:
 
 \lstset{language=Verilog, style=Verilogstyle}
 \begin{lstlisting}
@@ -387,8 +380,12 @@ end
 This automatic insertion of testcases, enables the script to first run HLS and then run simulation on the generated design and testbench.
 
 \section{Coding constraints}
-Due to some alterations made to the LegUp libraries, some additional constraints need to be followed when writing the functional specification to ensure correct output. The following subsections will describe these constraints.
+Due to the alterations made to the LegUp libraries, some guidelines need to be followed when writing the functional specification, to ensure correct output. The following subsections will describe these guidelines.
 \subsection{Structs}
-To support structs, byte-enable must be supported by the RAM or ROM module used to store the data. The RAM and ROM modules inferred by LegUp does not support byte-enable, resulting in struct support not being present when writing the functional specification. If structs are used in the code, LegUp will use an altsyncram-module instead of inferring RAMs. The altsyncram-module is not supported by the IC-compiler toolflow used at Nordic for synthesis, and inferred RAM-modules must therefore be used. 
+To support structs, byte-enable must be supported by the RAM or ROM module used to store the data. The RAM and ROM modules inferred by LegUp does not support byte-enable, resulting in struct support not being present when writing the functional specification. If structs are used in the code, LegUp will use an altsyncram-module instead of inferring RAMs. The altsyncram-module is not supported by the IC-compiler tool-flow used at Nordic for synthesis, and inferred RAM-modules must therefore be used. 
 \subsection{Pointers}
-Pointers are used to reference an object in memory, opposed to passing a copy of the actual object between function. This reduces both CPU-time and memory-space, as objects does not need to be copied every time it is used, and makes it possible to alter a memory object directly without implicit load and store operations. As the memory controller used to pass data between different modules are unwanted in an ASIC implementation, support for pointers are limited to use inside the function where the pointer is declared. This limitation is a big drawback with the additions to LegUp.
+Pointers are used to reference an object in memory, opposed to passing a copy of the actual object between function. This reduces both CPU-time and memory-space, as objects does not need to be copied every time it is used, and makes it possible to alter a memory object directly without implicit load and store operations. As the memory controller used to pass data between different modules are unwanted in an ASIC implementation, support for pointers are limited to use inside the function where the pointer is declared. This limitation is a big drawback with this adapted version of LegUp.
+\subsection{Arrays}
+Arrays can be used in the programs to some extent, but if the arrays get too large or too many arrays are instantiated, LegUp will implement them as RAMs inside the global memory controller. The reason for this is that arrays in C basically is a pointer to the array type. When the point-to analysis cannot determine that a single function use the array, it is automatically implemented as a global RAM.
+\subsection{Inputs and outputs}
+The implemented method of adding inputs and outputs to the module is not ideal. The need for using name-prefixes when writing the C-code puts more of the work on the coder, and draws the input further away from the standard ANSI-C that were intended as the input language. If using a while loop for supporting streaming inputs and outputs, it is not possible to do calculations after the loop, as this will break generation of the \textit{iterationFinish}-flag. Not being able to specify signal sizes also limits what designs can be created using the tool. All these limitations has to be taken into consideration when writing the functional specification, to make sure the design is supported by the tool-flow and framework.

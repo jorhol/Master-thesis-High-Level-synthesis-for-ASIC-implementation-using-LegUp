@@ -32,7 +32,8 @@ int main(int done, int inData, volatile long long int __out_outData) {
 }
 \end{lstlisting}
 
-\subsection{\label{subsec:cfircode2}Otimized C source code}
+\subsection{\label{subsec:cfircode2}Optimized C source code}
+\begin{lstlisting}
 #include <stdint.h>
 
 #define INPUTSIZE 32
@@ -54,8 +55,8 @@ int main(int done, int inData, volatile long long int __out_outData) {
   }
   return 0;
 }
-
-\subsection{\label{subsec:cfircode}Verilog source code}
+\end{lstlisting}
+\subsection{\label{subsec:verilogfircode}Verilog source code}
 \lstset{language=Verilog,style=VerilogStyle}
 \begin{lstlisting}
 module fir (

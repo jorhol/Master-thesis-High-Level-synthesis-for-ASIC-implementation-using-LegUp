@@ -89,7 +89,12 @@
 
 %% include if relevant
 
-
+\newcommand{\specialcellr}[2][t]{%
+  \begin{tabular}[#1]{@{}r@{}}#2\end{tabular}}
+  \newcommand{\specialcelll}[2][t]{%
+  \begin{tabular}[#1]{@{}l@{}}#2\end{tabular}}
+\newcommand{\specialcell}[2][t]{%
+  \begin{tabular}[#1]{@{}c@{}}#2\end{tabular}}
 
 \lstset{language=LLVM,style=LLVMStyle}
 
@@ -100,7 +105,7 @@
 %%\clearpage
 %%\cleardoublepage
 %\printnoidxglossaries
-%\cleardoublepage
+\cleardoublepage
 \pagenumbering{arabic}
 \pagestyle{ruled}
 \include{chapters/01-introduction}

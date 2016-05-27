@@ -1,5 +1,5 @@
-\chapter{Creating the Framework}
-\section{Create New Project}
+\chapter{Creating the framework}
+\section{Create new project}
 To create a new project, the directory hierarchy needs to be copied from a source and directories and filenames needs to be altered to match the design name. Filelist and setting files also needs to be altered to include the correct design file names. This process is automated into a bash script, \textit{CreateNewProject.sh}. To run the script, the directory \textit{\_source}, containing the source project, must be present in the directory where the script are called.
 
 The directory and file tree of the framework is shown in \cref{fig:frameworkdirtree}. Directories are colored cyan, executables and scripts are colored teal, and other design and constraint files are colored violet. File comment or description are in black. Each file is described in the comment on the right side. 
@@ -104,8 +104,9 @@ The directory and file tree of the framework is shown in \cref{fig:frameworkdirt
 \caption{Directory and file-tree of the framework}
 \label{fig:frameworkdirtree}
 \end{figure}
+The whole process of copying and renaming files, and replacing the correct strings in the setting files and scripts are automated into the script. When run, the script ask for the name of the new project, and replaces any occurrences of the word \textit{designname} in the \textit{\_source}-directory with the given name. The user does not need to change any of the scripts or Makefiles, only update design specific files as described in \cref{sec:runframework}.
 
-\section{HLS-script}
+\section{\label{sec:hlsscript}HLS-script}
 In order to automatically run HLS, simulation, synthesis, layout, and power-estimation, a script is created. Since LegUp is running on a VirtualBox image and not on the same servers where the other tools are located, some files and commands needs to be transferred between different locations. In the project \cite{holm2015pro} a possible solution using SSH and SCP were proposed. The script will build on this method, but first some additional preparations needs to be made. Since the VirtualBox guest is running on a local computer, a port forwarding rule has to be added to allow connections to port 22 of the guest from the Nordic Linux servers. The connections has to go through the host computer, as the VirtualBox guest does not have any direct connection to the network. The setting can either be set using the GUI of VirtualBox, or by running the following command from a command line:
 \begin{verbatim}
   VBoxManage modifyvm myserver --natpf1 "ssh,tcp,,3022,,22"  
@@ -124,25 +125,61 @@ The script has 7 main tasks:
     \item Run power estimation
     \item Generate readable result reports
 \end{itemize}
-The five tasks in the middle is basically just copying files to and from LegUp, and running make-commands. These steps are a combination of the standard tool-flow used at Nordic semiconductor, part of the tool-flow created by Joar Talstad in his Master-thesis, and some necessary additions. The two last tasks however, are a bit more comprehensive and are described in the following two subsections. The script is written for the bash-shell, and the full code of the script is listen in \cref{lst:hlsscript} in \cref{sec:hlsscript}.
+The five tasks in the middle is basically just copying files to and from LegUp, and running make-commands. These steps are a combination of the standard tool-flow used at Nordic semiconductor, part of the tool-flow created by Joar Talstad in his Master-thesis, and some necessary additions. The two last tasks however, are a bit more comprehensive and are described in the following two subsections. The script is written for the bash-shell, and the full code of the script is listen in \cref{lst:hlsscriptsourcecode} in \cref{sec:hlsscriptsourcecode}.
 
 \subsection{Constraint generating}
-In order to run HLS with a variety of different constraints and settings, one constraint and one Makefile need to be generated for each run. To automate this process, an Excel document, \textit{constraints.xlsx}, has been created. Sheet 2 of this document contains the setup of the constraints. Here the user can select which constraints should be randomized and also set if the constraint should have a specific value. Some values are required, and must have the value specified. If a parameter is not needed, the user can specify that the default value of the parameter should be kept. 
-Sheet 1 of the Excel file contains a comma-separated version (CSV format) of the constraint settings. This CSV format is copied to a CSV file by using the headless tool \textit{convert-to} in libreoffice, \verb!libreoffice --headless --convert-to csv!. The CSV-file can then be read by the program generating constraint- and Makefiles. The program takes the filename of the CSV-file, the level parameter for the Makefile, and the designname as inputs, and returns the number of generated constraint-files. This number is used in the HLS-script to run the framework the correct number of times. The full code of the program generating constraint files are listed in \cref{lst:constraintGenerating} in \cref{sec:hlsscript}.
+In order to run HLS with a variety of different constraints and settings, one constraint and one Makefile need to be generated for each run. To automate this process, an Excel document, \textit{constraints.xlsx}, has been created. Sheet 2 of this document, shown in \cref{fig:excelconstraintssetup}, contains the setup of the constraints. Here the user can select which constraints should be randomized and also set if the constraint should have a specific value. Some values are required, and must have the value specified. If a parameter is not needed, the user can specify that the default value of the parameter should be kept. 
+
+\begin{figure}
+        \centering
+        \begin{subfigure}{0.66\textwidth}\centering%no!\hfill
+                    \includegraphics[width=\linewidth]{../figs/ConstraintGenerationSetup.png}
+                \caption{Setup page}
+  \label{fig:excelconstraintssetup}
+       \end{subfigure}%
+    \hfill
+        \begin{subfigure}{0.32\textwidth}\centering
+                    \includegraphics[width=\linewidth]{../figs/ConstraintGenerationCSV.png}
+                \caption{CSV format output}
+  \label{fig:excelconstraintscsv}
+       \end{subfigure}%
+    \hfill
+
+\caption{\label{fig:assigningoutputs}Constraint-file generation in Excel spreadsheet}
+ \end{figure}
+ 
+Sheet 1 of the Excel file, shown in \cref{fig:excelconstraintscsv}, contains a comma-separated version (CSV format) of the constraint settings. The format of one CSV-string is:
+\begin{verbatim}
+parameterName,value,required,random,parameter,makefile,keepDefault
+\end{verbatim}
+Only the fields relevant for the parameter will be printed to the CSV, for instance the parameter \textit{CASE\_FSM} will print the line \verb!CASE\_FSM,random,parameter!, as this is the relevant fields for this parameter given the setup of the spreadsheet. Similar, the parameter \textit{NO\_OPT} will print the line "\verb!NO\_OPT,1,makefile!", since this is a Makefile-parameter defined to have the value 1.
+The CSV format is copied from the Excel-file to a CSV file by using the headless tool \textit{convert-to} in libreoffice, with the command \verb!libreoffice --headless --convert-to csv!. The CSV-file can then be read by the program generating constraint- and Makefiles. 
+
+The program \textit{constraintGenerator.run} take the filename of the CSV-file, the level parameter for the Makefile, and the designname as inputs, and returns the number of generated constraint-files. This number is used in the HLS-script to run the framework the correct number of times. By parsing through the above described CSV-file, the program generates one constraint-file and accompanying Makefile for each variation of the randomized constraint parameters. Currently only parameters taking a 1-bit binary value is supported by the constraint generator program. This gives a total of $2^N$ designs, where \textit{N} is the number of randomized parameters. The constraints is set using a binary counter, meaning that for 3 randomized parameters, the first constraint-file will have the values 0,0,0, the second file 0,0,1, the third file 0,1,0, and so on. The generated constraint- and Makefiles are output to the directories \textit{constraintfiles} and \textit{makefiles} under the \textit{hls}-directory. The full code of the program generating constraint files are listed in \cref{lst:constraintGenerating} in the appendix. The constraint
 
 \subsection{Report generating}
-As the HLS-script can be used to generate a large amount of designs, it is important to easily be able to collect the important data from all the generated reports. To ease the process of data collecting, the script collects the data from all designs and stores it in separate files. The data is collected using \textit{grep} commands, and the data is stripped of unnecessary text using \textit{find} and \textit{sed} commands. The collected data is stored under the folder reports, with the filenames:
-\begin{verbatim}
-net_switching_power.rpt     
-cell_internal_power.rpt     
-cell_leakage_power.rpt      
-total_power.rpt          
+As the HLS-script can be used to generate a large amount of designs, it is important to easily be able to collect the important data from all the generated reports. To ease the process of data collecting, the script collects the data from all designs and stores it in separate files. The data is collected using \textit{grep} commands, and the data is stripped of unnecessary text, using bash's substring replacement function, before output to files. The collected data is stored under the \textit{reports}-directory, with the file-names:
+\begin{multicols}{2}
+\textbf{From synthesis:}\\
+\verb!register_count.rpt!
 
-register_count.rpt
-comb_area.rpt
-noncomb_area.rpt
-buf_inv_area.rpt
-cell_area.rpt
-\end{verbatim}
+\textbf{From Layout:}\\
+\verb!combinational_area.rpt!\\
+\verb!noncombinational_area.rpt!\\
+\verb!design_area.rpt!
 
-The content of the files can easily be imported in Excel or other tools for creating graphs or do comparison. This comparison could be made automatic if desired.
+\textbf{From power analysis:}\\
+\verb!net_switching_power.rpt!\\
+\verb!cell_internal_power.rpt!\\
+\verb!cell_leakage_power.rpt!\\
+\verb!total_power.rpt!
+
+\textbf{Combined:}\\
+\verb!all_results.rpt!
+\end{multicols}
+
+The content of each file corresponds to the file-name, and the line-numbers correspond to the design-number, i.e. the first line in each file is results from design 0, second line is results from design 1, and so on. In the reports from power analysis, 5 values is stored at each line in the file, separated by commas. This is because the power analysis has five different power scenarios, each generating one result. The other files only contain a single value at each line. To simplify the process of importing the data into spreadsheets or other visualization-tools all files are joined horizontally into a single file, \textit{all\_results.rpt}, i.e., the first line of each file will be joined on the the first line of this file, separated by tabs, and similar with the next lines. This tidy file can be imported in Excel or other tools for generating graphs or compare data. Comparison could be made automatic if desired, but this is not implemented at this stage.
+
+\section{\label{sec:runframework}Running the framework}
+Before running the framework, some files need to be filled out. The functional specification needs to be added to the file \textit{designName.c} and testcases for the simulation can be added to the file \textit{test\_designName\_testcases.v} under the directories \textit{sim/tb/}. In addition, the desired constraints need to be selected or filled out in the file \textit{constraints.xlsx} in the \textit{hls}-directory. To run the framework, the file \textit{HLSScript.sh} is executed from a shell. Depending on the design size, available licences, and number of randomized constraints, the run-time of the framework can be long. If the framework seems stuck on one of the tasks, check the log file, \textit{HLSscript.log}, for errors.
+

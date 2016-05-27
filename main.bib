@@ -10,7 +10,7 @@
 @inproceedings{talstad14project,
   author = {Talstad, Joar Nikolai},
   title = {Early Stage Power Estimation and Analysis on a Multi-Voltage Design},
-  note = {Specialization project report},
+  booktitle = {Specialization project report},
   month = dec,
   year = {2014},
   organization={Norwegian University of Science and Technology}
@@ -28,6 +28,7 @@
   title={An introduction to high-level synthesis},
   author={Coussy, Philippe and Gajski, Daniel D and Meredith, Michael and Takach, Andres},
   journal={IEEE Design \& Test of Computers},
+  volume = {26},
   number={4},
   pages={8--17},
   year={2009},
@@ -38,6 +39,7 @@
   title={High-level synthesis: Past, present, and future},
   author={Martin, Grant and Smith, Gary},
   journal={IEEE Design \& Test of Computers},
+  volume = {26},
   number={4},
   pages={18--25},
   year={2009},
@@ -62,6 +64,7 @@
 }
 
 @misc{clang,
+  author = "clang",
   title = "clang: a {C} language family frontend for {LLVM}",
   year = "2007",
   howpublished = "http://clang.llvm.org/",
@@ -80,6 +83,7 @@
 @techreport{odersky2004overview,
   title={An overview of the {Scala} programming language},
   author={Odersky, Martin and Altherr, Philippe and Cremet, Vincent and Emir, Burak and Maneth, Sebastian and Micheloud, St{\'e}phane and Mihaylov, Nikolay and Schinz, Michel and Stenman, Erik and Zenger, Matthias},
+  institution = "École Polytechnique Fédérale de Lausanne",
   year={2004}
 }
 
@@ -108,17 +112,21 @@
   year={2009},
   school={University of Twente}
 }
-
-@inproceedings{bjesse1998lava,
-  title={Lava: hardware design in Haskell},
-  author={Bjesse, Per and Claessen, Koen and Sheeran, Mary and Singh, Satnam},
-  booktitle={ACM SIGPLAN Notices},
-  volume={34},
-  number={1},
-  pages={174--184},
-  year={1998},
-  organization={ACM}
-}
+@article{bjesse1998lava,
+ author = {Bjesse, Per and Claessen, Koen and Sheeran, Mary and Singh, Satnam},
+ title = {Lava: Hardware Design in Haskell},
+ journal = {SIGPLAN Not.},
+ issue_date = {Jan. 1999},
+ volume = {34},
+ number = {1},
+ month = sep,
+ year = {1998},
+ issn = {0362-1340},
+ pages = {174--184},
+ numpages = {11},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+} 
 
 @BOOK{FILTERSWEB07,
 	AUTHOR = "Julius O. Smith",
@@ -192,6 +200,7 @@
 @misc{legupmaual,
   author = {LegUp},
   title = {Programmer’s Manual},
+  year = "2015",
   howpublished = "http://legup.eecg.utoronto.ca/docs/4.0/programm-ermanual.html",
   note = "[Online; Accessed: 2015-12-09]"
 }
@@ -199,6 +208,7 @@
 @misc{llvmarch,
   author = {Chris Lattner},
   title = {The Architecture of Open Source Applications: {LLVM}},
+  year = "2012",
   howpublished = "http://www.aosabook.org/en/llvm.html",
   note = "[Online; Accessed: 2015-12-09]"
 }
@@ -206,6 +216,7 @@
 @misc{legupconst,
   author = {LegUp},
   title = {Constraints Manual},
+  year = "2015",
   howpublished = "http://legup.eecg.utoronto.ca/docs/4.0/constraints-manual.html",
   note = "[Online; Accessed: 2015-12-10]"
 }
@@ -213,6 +224,7 @@
 @misc{leguparch,
   author = {LegUp},
   title = {Hardware Architecture},
+  year = "2015",
   howpublished = "http://legup.eecg.utoronto.ca/docs/4.0/hwarchi-tecture.html",
   note = "[Online; Accessed: 2015-12-11]"
 }
@@ -220,6 +232,7 @@
 @misc{haskellonline,
   author = {Haskell},
   title = {Haskell: An advanced purely-functional programming language},
+  year = "2015",
   howpublished = "https://www.haskell.org/",
   note = "[Online; Accessed: 2015-12-10]"
 }
@@ -275,6 +288,15 @@
   year={2011}
 }
 
+@misc{bitwidthattr,
+  title={Bug 1284 - Support bitwidth attribute in llvm-gcc},
+  author={Reid Spencer},
+  howpublished="https://llvm.org/bugs/show$\_$bug.cgi?id=1284",
+  note="[Online; Accessed: 2016-05-27]",
+  year={2007}
+}
+
+
 @unpublished{nordicddvc,
   title={Digital Design and Verification Conventions {(DDVC)}},
   author={Skoglund, Per-Carsten and Amlo, Christoffer},
@@ -285,7 +307,7 @@
 @inproceedings{holm2015pro,
   author = {Holmefjord, Jørgen Frydenlund},
   title = {High-Level Synthesis for Hardware Architectural Exploration},
-  note = {Specialization project report},
+  booktitle = {Specialization project report},
   month = dec,
   year = {2015},
   organization={Norwegian University of Science and Technology}
