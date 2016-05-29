@@ -1,5 +1,6 @@
 \chapter{\label{chp:background}Theory and background}
-Theory, background and previous work is important to give a thurow understanding of the material to follow in the next chapters. The base of this background chapter is written as part of the specialization project conducted during the autumn of 2015, but it is included here to allow the report to be a freestanding document and to add a deeper level of explanation of some of the described concepts than that presented in the previous report. 
+Theory, background and previous work is important to give a thorough understanding of the material to follow in the next chapters. The base of this background chapter is written as part of the specialization project conducted during the autumn of 2015, but it is included here to allow the report to be a freestanding document and to add a deeper level of explanation of some of the described concepts than that presented in the previous report. A small section from the section 3.3 of the chapter \textit{Methodology} has also been added in \cref{sec:toolflowbg} here, as it describes part of the same tool-flow.
+
 In the early days of digital hardware design, gate design and layout were performed by hand. With the rapid growth in the numbers of transistors per digital chip-design, this method quickly became too time-consuming and the need for new and more automated design methods rose. \gls{rtl}-design using \gls{hdl} has long been the standard in digital hardware design. With the increasing demand for low power and small area in large \gls{soc} designs with multiple billion transistors, this methodology is no longer sufficient if hardware manufacturers want to hit the window of opportunity with their state-of-the-art product.
 
 \section{\label{sec:hls}High-Level Synthesis}
@@ -26,7 +27,13 @@ Scheduling arranges all operations in an optimized sequence so that variables ar
 \subsubsection{Binding}
 In the binding task, all clock-cycle-crossing variables, operations, and transfers are bound to a free resource, in the time-frame when it is scheduled. Non-overlapping or mutually exclusive variables can be bound to the the same storage unit, and operations can be bound to the best optimized functional unit if multiple alternatives are available. Each transfer from component to component, either storage or functional unit, needs to be bound to a connection unit, such as a bus or a multiplexer.
 \subsubsection{RTL Generation}
-The generated \gls{rtl} usually consists of two parts, a control-unit and a data-path-unit. The control-unit is often implemented as a \gls{fsm}, which set control-signals to the data-path, and controls the current and next-state of the system. The data-path contains storage-, functional-, and connection-units. Depending on the intensiveness of the binding step, the output \gls{rtl} can be tightly or loosely bound to the available resources. If an operation is not bound to a specific unit, it is up to the following logic synthesis of the \gls{rtl} to bind the operations to available resources. The different types of \gls{rtl} output are illustrated by the following example. \textit{a = b * c} executing in state \textit{n}:
+The generated \gls{rtl} usually consists of two parts, a control-unit and a data-path-unit. The control-unit is often implemented as a \gls{fsm}, which set control-signals to the data-path, and controls the current and next-state of the system. The data-path contains storage-, functional-, and connection-units. An example of this division is shown in \cref{fig:hlsrtl}.
+\begin{figure}[hbpt]
+\centering
+\includegraphics[width=0.65\textwidth]{../figs/HLSRTL.png}
+\caption{\label{fig:hlsrtl}Typical division of control and data-path in the generated \gls{rtl} from \gls{hls}.}
+\end{figure}
+Depending on the intensiveness of the binding step, the output \gls{rtl} can be tightly or loosely bound to the available resources. If an operation is not bound to a specific unit, it is up to the following logic synthesis of the \gls{rtl} to bind the operations to available resources. The different types of \gls{rtl} output are illustrated by the following example. \textit{a = b * c} executing in state \textit{n}:
 
 \begin{minipage}[t][300px]{\textwidth}
 \textbf{Without any binding:}%\hfill\vspace{-\baselineskip}
@@ -214,8 +221,10 @@ LLVM \cite{LLVM:CGO04}, formerly Low-Level Virtual Machine, is a compiler framew
 \caption{\label{fig:llvmcompiler}LLVM's three-phase compiler structure \cite{llvmarch}.}
 \end{figure}
 
-\subsubsection{Intermediate Representation}
-LLVM use a human readable assembly-like, strongly typed RISC instruction set as their \gls{ir}, with support for an infinite number of temporary registers of the form \%0, \%1, etc. LLVM-\gls{ir} can also output a dense bitcode format for serialization.
+\subsection{Intermediate Representation}
+LLVM use a human readable assembly-like, strongly typed RISC instruction set as their \gls{ir}, with support for an infinite number of temporary registers of the form \%0, \%1, etc. LLVM-\gls{ir} can also output a dense bitcode format for serialization. Conversion between the bitcode-format and the human-readable format, and vice versa, can be done with the commands "\verb!llvm-dis!" and "\verb!llvm-as!", for dis-assembly and assembly.
+
+Some parts of the LLVM \gls{ir} will be described in \cref{chp:toolflowex}. The whole language are too large to be fully explained here, but interested readers can read more about the syntax in the \textit{LLVM Language Reference Manual} \cite{llvmlangman}.
 
 \section{Alternative hardware design methods}
 \gls{hls} is not the only alternative to \gls{hdl}-languages, if you want to design digital hardware at a higher level of abstraction. The following subsections will shortly describe two alternative approaches to digital hardware design. 
@@ -230,11 +239,11 @@ In high-level programming languages like C and C++ and in \gls{hdl} languages li
 \subsection{Structures}
 A structure, or struct for short, is a complex data-type that can contain multiple other variables of different data-types. 
 \subsection{Classes}
-
+A class can contain multiple variables of different data-types, like a struct, but in addition a class can have member.functions and divide its member into a public and a private scope. The private members of a class can only be accessed through public member-functions. This added level of security increase the level of integrity of the objects.
 \subsection{Pointers}
 A pointer is a variable that is defined to point at a location in memory where another object is stores. The pointer itself contains the memory address of the object it points at.
 \subsection{Declaration}
-Declaration refers to the process of declaring a type or an object that will be used at a later stage. This can be a structure in C, a Class in C++ or a module in Verilog. A type or an object needs only to be declared once and can then be used as many times as necessary. An example of a declaration of a struct in C: 
+Declaration refers to the process of declaring a type or an object that will be used at a later stage. This can for instance be be a struct in C, a class in C++ or a module in Verilog. A type or an object, needs only to be declared once and can then be used as many times as necessary. An example of a declaration of a struct in C: 
 \lstset{language=C++, style=Cstyle}
 \begin{lstlisting}
 struct Book { char title[128], 
@@ -242,46 +251,114 @@ struct Book { char title[128],
               int isbn 
             } ;
 \end{lstlisting}
-By declaring the struct using \textit{typedef}, the struct can be instantiated by writing only the type-name and the variable name \verb!Book myBook!, instead of writing \verb!struct Book_t myBook!.
 \subsection{Instantiation}
-Instantiation is when the object you created with your declaration, is created and stored at a designated location in memory. When you instantiate an object, you usually assigns it a variable, or name, that you use throughout the scope of the object to reference the object.
+Instantiation is when the object you created with your declaration, is created and stored at a designated location in memory. When you instantiate an object, you usually assigns it a variable, or name, that you use throughout the scope of the object to reference the object. In Verilog we often talk about module \textit{instantiation}. This is the same concept as in \gls{hll}-languages, but here a declared module is placed inside another module, making it a \textit{sub-module}.
 \subsection{Assignment}
-Assignment means to assign a value to the instantiated object.
+Assignment is when you give an instantiated object a value, i.e. you are assigning a value to the object.
+\subsection{Defining types}
+A user-defined structure or object can be defined as a type in C. The struct-example from above can be defined as a type by the line:
+\begin{lstlisting}
+typedef struct Book Book_t
+\end{lstlisting}
+Now an object of the type \textit{struct Book} can be instantiated using the line:
 
-\section{Power dissipation in circuits}
+\verb!Book_t mybook!,
 
-\section{Tool-flow}
-LegUp utilizes Makefiles to perform the \gls{hls}-flow. The power and area estimation tool-flow described in section \ref{sec:powest} also use Makefiles for its flow. It can therefore be clever to create a single Makefile that controls the information-flow from the input of C-files to the output of Verilog-files along with score-files of area and power estimates. 
+where \textit{mybook} is the variable name. Using \textit{typedef} saves time and reduce code-size in many cases.
+
+\section{\label{sec:powdiss}Power dissipation in CMOS circuits}
+The power dissipation in CMOS circuits can be divided into three categories \cite{panda2010power}, \textit{dynamic power}, \textit{short-circuit power} and \textit{leakage power}. This gives a total power dissipation of:
+\begin{equation}
+    P_{total} = P_{dynamic} + P_{short-circuit} + P_{leakage}
+\end{equation}
+
+Figure \cref{fig:powerdisscmos} shows the distribution of the power components of the CMOS circuit. Each component is described in more detail in the following subsections, where \textit{switching power} corresponds to $P_{dynamic}$, \textit{internal power} corresponds to $P_{short-curcuit}$, and \textit{leakage power} to $P_{leakage}$.
+\begin{figure}[hbpt]
+\centering
+\includegraphics[width=0.4\textwidth]{../figs/PowerDissipation.png}
+\caption{\label{fig:powerdisscmos}Power dissipation components distribution \cite{panda2010power}.}
+\end{figure}
+
+\subsection{Switching power}
+\textit{Switching power} arise whenever a signal change the logic state from 0 to 1, causing the load capacitance to be charged by the power supply. Half the energy drawn from the power supply needed to charge the capacitance, is dissipated as heat in the process. The \textit{switching power} depends on the frequency of the switching, the switching factor of gates and the load capacitance in addition to the supply voltage. 
+
+\subsection{Internal power}
+The \textit{internal power} is the power used to charge and discharge the internal capacitance of the circuits whenever a pin change its state. A large part of the \textit{internal power} is the short-circuit power. In the short time when both the pMOS and nMOS transistor of the CMOS circuit is \textit{on}, a current will be drawn from the source $V_{dd}$ to ground through the short-circuit that will occur. 
+
+\subsection{Leakage power}
+Whenever the circuits are turned \textit{on}, a small leakage current will be drawn from the gates. The leakage power is mostly caused by sub-threshold currents and reverse biased diodes in the circuits. The leakage current increase when the technology shrinks, making leakage a bigger problem today than before. 
+
+\section{\label{sec:toolflowbg}Tool-flow}
+This tool-flow section will describe all the tools that are used throughout this thesis, and the connection and data-flow between the different tools. This flow is based on the standard tool-flow used at Nordic Semiconductor, as well as some parts adapted from the "\textit{automated area and power estimation tool-flow}" created by Joar Talstad for his Master thesis \cite{talstad15master}. Most of the tool-flow is based on scripts and Makefiles that can be run from a Linux shell, but there are also some GUI-tools available that will be mentioned briefly in \cref{chp:toolflowex}. The following subsection will describe the different sections of the tool-flow in detail. The flow in LegUp will not be described here, as this is covered above and will be presented in more detail in \cref{chp:toolflowex}.
 
 \subsection{Simulation}
-
+Simulation is run to verify the correctness of a design and to help detect and eliminate potential bugs. In this project, the simulation tool also generates a \gls{vcd}-file, showing switching activity during simulation. This file is used in the power analysis tool later in the flow, to get a realistic input of the amount of switching in the design. Simulation is performed using the tool ModelSim for Questa-64, version 10.2b 2013.05 \cite{questasim}. Simulation is executed by calling the script \textit{RUN\_ALL}. The \gls{rtl}-design filelist and a file containing a testbench module must be specified in the filelist found in the \textit{sim/tb/}-directory, at this is used as input to the simulation tool.
 \subsection{Synthesis}
-
+Synthesis translates a \gls{rtl}-design written in a \gls{hdl}-language, like Verilog or VHDL, into a netlist for a specified target library. The tool used for synthesis in this project is Synopsys Design Compiler, version I-2013.12-SP2 \cite{syndescomp}. A cell library describing 180nm technology is used as the target architecture. A Makefile is used to start synthesis, and the command \verb!make compile! runs the full synthesis. The netlist generated by synthesis is found in the file \textit{designName.mapped.v} in the \textit{result}-directory. This netlist is used as input for the layout-tool. Synthesis generated reports showing area-estimates, register count, critical path and static power estimates for the design. As the design will be processed further through the tool-flow, these reports are not that accurate or useful.
 \subsection{Layout}
-
+Layout translates the netlist generated during synthesis into a chip layout. The tool used for layout in this project is Synopsys IC Compiler, version L-2016.03-SP1 \cite{syniccomp}. A Makefile is used to start layout, and the command \verb!make outputs_cts! runs the correct layout-script. Layout produces a new netlist-file, stored in the file \textit{designName.output.v} in the \textit{result}-directory. This netlist is used in the power analysis tool for estimating power consumption. From layout, reports about area and critical paths are stored in the \textit{reports}-directory. These results are more accurate, as they were gathered from the actual chip layout.
 \subsection{\label{sec:powest}Power analysis}
-In order to compare different use-cases and result generated by LegUp, the area usage and power consumption will be estimated. Since this is not the main objective of this project, the automated area and power estimation tool-flow created by Joar Talstad in his specialization project \cite{talstad14project} and master thesis \cite{talstad15master} will be adapted for this purpose. This tool-flow use Synopsys Primetime PX for power analysis and estimation.
+Power analysss is performed to get an early indication on how much power the final design will be consuming. The tool used power analysis in this project is Synopsys Primetime, version K-2015.12-SP3. To get accurate power estimates, the switching activity file generated during simulating is used together with the netlist output from layout. The conclusion from \cite{talstad15master} were that this method is well suited for making RTL-design trade-offs based on power consumption in multi-voltage designs, providing accurate results. Power analysis is run on five different power scenarios, each giving a separate result for each of the three power dissipation categories described in \cref{sec:powdiss}. The reports are stored in the \textit{reports}-directory.
 
 \section{Unix tools}
 Some tools available in Linux is used throughout the scripts created in this thesis. The following subsections will give a short introduction to the most important tools and its usage.
+\subsection{bash}
+\textit{bash} is the default shell, or command language interpreter, in Linux. A shell processes macros and executes commands. By adding commands to a file, i.e. a script, a long list of commands can be executed in order. For a script to be executed in the bash shell, the \textit{shebang}-line, the first line of the file, needs to contain the path to the bash shell. The line \verb!#!/bin/bash! can be used in most cases, but for portability, the line \verb!#!/usr/bin/env bash! is the safest choice.
+
 \subsection{make}
-Make is a tool for running 
+\textit{make} is a tool used to decide which parts of a large program needs to be recompiled. The synopsis of \textit{make} is:
+
+\verb!make [OPTIONS] [TARGETS]!
+
+Some options for make are:\\
+\verb!-f MAKEFILE     !\textit{Provide the path to the Makefile}
+\verb
+
+To use \textit{make}, a \textit{Makefile} describing the relationships between the files of the program is needed. If the Makefile is present in the folder where you run the \textit{make}-tool, you do not need to specify the path to the file. The Makefile can define multiple targets, each performing a separate compilation. There can be dependencies between the targets, forcing the dependency-targets to be compiled before specified target.
 \subsection{grep}
-\subsection{find}
-\subsection{sed}
-Bash substring replacement
+\textit{grep} is used to search for the occurrence of a pattern in a given file, and print each line found. The synopsis of \textit{grep} is:
+
+\verb!grep [OPTIONS] PATTERN [FILE...]!
+
+where PATTERN is the pattern to be matched, and FILE is the path to the file(s) to be searched.
+
+Some important options used with \textit{grep} are:\\
+\verb!-e PATTERN      !\textit{Provide multiple patterns}\\
+\verb!-f FILE         !\textit{Get PATTERN from file}\\
+\verb!-c              !\textit{Return number of matched lines}\\
+\verb!-m NUM          !\textit{Exit after NUM matches}
+
+If you run the command "\verb!grep "one"!" on a file containing the following lines:
+
+\verb!one two three!\\
+\verb!one!\\
+\verb!two!
+
+the output will be:
+
+\verb!one two three!\\
+\verb!two!
+
+as the first and the last line of the input contains the pattern \textit{two}.
+
+\subsection{Substring replacement}
+
+As \textit{grep} returns the whole line that were matched we need a way to eliminate unwanted information from the returned line. For this purpose, the tool \textit{sed} could be used, but when using the \textit{bash}-shell for scripts, a similar tool called substring replacement is included natively. The syntax of substring replacement is:
 
 \verb!\${string/substring/replacement}!
+
+where \textit{string} is a string, \textit{substring} is the text to be replaced and \textit{replacement} is the string that \textit{substring} will be replaced with. Notice that \textit{string} can be both a literate string and a variable containing a string, depending on the use. This format will only replace the first occurrence of \textit{substring} on each line of \textit{string}. To replace all occurrences, this format must be used:
+
 \verb!\${string//substring/replacement}!
 
-
+If the command "\verb!${"one two one two"//one/three}!" is run, the output would give \verb!"three two three two"!, as all occurrences of the substring \textit{one} will be replaced by \textit{three}.
 
 \section{Reference design}
 \label{sec:refdes}
-In order to evaluate the performance and overhead in power and area generated by LegUp, two reference designs are created to compare the produced results from LegUp towards the same design written in native Verilog \gls{hdl}. To evaluate whether the structure of the design impact the overhead on the output, the first design contains a regular structure, where the same operations are performed each clock-cycle. The first reference design was chosen to be a \gls{fir}-filter. The second design contains a state machine, as it is interesting to see if the \gls{fsm} implemented by LegUp generates less overhead if the design itself is a state machine. The choice landed on designing a \gls{sap-1} architecture. Both designs are described in the subsections below.
+This thesis will look into whether or not LegUp can be used as the HLS-tool in a framework for architectural exploration of hardware. In order to get some output from LegUp than can be compared towards each other, a reference design must be created. The design must be something that can be implemented both in C and Verilog and it should be easy to implement. In \cite{holm2015pro}, two reference designs were implemented; a FIR-filter and a SAP-1 architecture. The FIR-filter will be used as the reference design in this project, as this is a regular structure that easily can be implemented and verified. The SAP-1 architecture would have been a interesting second reference design, as it consists of a FSM, just like the output from LegUp. Unfortunately, this architecture has too many design-parts that makes it hard to write a functional specification for it in C.
 
 \subsection{\label{subsec:refdesfir}FIR-filter}
-\gls{fir}-filters are together with \gls{iir}-filters, the two categories of linear time-invariant systems, used in digital signal processing application. The impulse response of a \gls{fir}-filter is zero outside some finite time interval.
+\gls{fir}-filters are together with \gls{iir}-filters, the two categories of linear time-invariant systems, used in digital signal processing application. The impulse response of a \gls{fir}-filter is zero outside some finite time interval. 
 A general \gls{fir}-filter can be described by the differential equation \cite{proakis2007digital}:
 \begin{equation}
     y(n)=\sum\limits_{k=0}^{M-1} b_kx(n-k)
@@ -310,10 +387,12 @@ From \cref{eq:firfilterdiff} and \cref{eq:firfilterimp} we get the discrete conv
     \label{eq:firfilterconv}
 \end{equation}
 \noindent
-Figure \ref{fig:firfilter} shows the direct form representation of a N-order \gls{fir}-filter with N+1 taps. 
+Figure \ref{fig:firfilter} shows the direct form representation of a N-order \gls{fir}-filter with N+1 taps. The figure shows that a FIR-filter requires $N-1$ memory elements, \textit{N} adders and \textit{N} multipliers. 
 \begin{figure}[hbpt]
 \centering
 \includegraphics[width=\textwidth]{../figs/FIRFilter.png}
 \caption{\label{fig:firfilter}Direct form representation of a N-order FIR-filter.}
 \end{figure}
+
+
 Even though the process of designing a \gls{fir}-filter might not be a trivial task, the implementation of an already designed filter is simple. As seen from \cref{eq:firfilterconv}, the filter can be described by the convolution formula, which implies that the filter can be implemented as convolution of the input function \textit{x(n)} with the impulse response function \textit{h(n)}.
