@@ -1,5 +1,5 @@
-\chapter{Framework results}
-The framework is tested using the reference design of a FIR-filter, described in \cref{subsec:refdesfir}. The source code of the filter, written in C, is listed in \cref{subsec:cfircode} in the appendix. The implemented FIR-filter has a 32-bit input, 16 taps and 64-bit output. The filter-coefficients are for simplicity defined to be the integers 1-16. By running this design through the framework, we will get multiple results. These results will be compared towards each other, but also towards the same FIR-filter implemented in Verilog directly. The source code of the Verilog implementation is listed in \cref{subsec:verilogfircode} in the appendix.
+\chapter{\label{chp:frameworkresults}Framework results}
+The framework is tested using the reference design of a \gls{fir}-filter, described in \cref{subsec:refdesfir}. The source code of the filter, written in C, is listed in \cref{subsec:cfircode} in the appendix. The implemented \gls{fir}-filter has a 32-bit input, 16 taps and 64-bit output. The filter-coefficients are for simplicity defined to be the integers 1-16. By running this design through the framework, we will get multiple results. These results will be compared towards each other, but also towards the same \gls{fir}-filter implemented in Verilog directly. The source code of the Verilog implementation is listed in \cref{subsec:verilogfircode} in the appendix.
 
 \section{\label{sec:firstrun}First test-run}
 The first test-run were performed with 6 randomized constraints input to LegUp. Each of the constraints could take values 1 and 0, giving a total of $2^6=64$ combinations. The randomized constraints and the pattern of how the values are set is shown in \cref{tab:randomconstraint}.
@@ -147,7 +147,7 @@ These results are a better match with our expectations. Both area and power has 
 \caption{\label{fig:resultcomparisonhlsrun2}Graph comparing framework generated design from second run towards same design written in Verilog}
 \end{figure}
 
-\section{Full tool-flow framework run}
+\section{\label{sec:fullflowresults}Full tool-flow framework run}
 The full tool-flow were incorporated into the framework, to see if more accurate power estimates shows a different result. With the full tool-flow, the area reports is gathered from layout instead of synthesis and the power estimates is gathered from power analysis. The full tool-flow is run using the same design as in \cref{sec:firstrun}, with only the three constraints that affected the output, again a total of 8 designs. Since the full tool-flow uses switching data from the simulation to perform power analysis, the testbench used had to be changed to get more switching values. The new testbench applies 1000 random inputs to the input \textit{inData} and waits for the flag \textit{iterationFinished} to be set before applying a new input. The full source code of this testbench is listed in \cref{subsec:firfiltertb}. The testbench for the design written in Verilog is almost exacly the same, just adapted to the correct signal names and instead of waiting for a flag, \textit{inData} is assigned a new value each 17 clock cycles. The area results are shown in \cref{tab:resultgraphareaframeworkrun2} and the power estimates are shown in \cref{tab:resultgraphpowerframeworkrun2}.
 
 \begin{table}[hbtp]
@@ -272,8 +272,8 @@ The critical path results and corresponding F\textsubscript{MAX} is shown in \cr
     \label{tab:critpathfmax}
 \end{table}
        
-\section{Bugs in the generated design}
-To avoid the generating of a global memory controller, the flag \textit{NO\_INLINE} had to be set to 0 in the Makefile. This introduces two bugs in the generated Verilog; firstly, the signal generated from the parameter \textit{done} is not sampled after the first time, making the program run forever, secondly the statement \verb!products[0] = inData * 1! is only evaluated on the first iteration of the loop, meaning all outputs from the FIR-filter (except the first one) will have a deviation from the correct result, corresponding to \verb!correctResult - inData + firstInData!. From the generated LLVM IR code it looks like the first bug occurs because the comparison of the input \textit{done} being performed in another state than where it is used as loop exit-condition. In the same state, \textit{inData} is sign-extended, as it is a 32-bit variable being assigned to a 64-bit variable. Both these results are stored to temporary registers for use later, as shown below. From the simulation, it can be seen that this particular state is not visited again when the loop has been entered.
+\section{\label{sec:designbugs}Bugs in the generated design}
+To avoid the generating of a global memory controller, the flag \textit{NO\_INLINE} had to be set to 0 in the Makefile. This introduces two bugs in the generated Verilog; firstly, the signal generated from the parameter \textit{done} is not sampled after the first time, making the program run forever, secondly the statement \verb!products[0] = inData * 1! is only evaluated on the first iteration of the loop, meaning all outputs from the \gls{fir}-filter (except the first one) will have a deviation from the correct result, corresponding to \verb!correctResult - inData + firstInData!. From the generated LLVM \gls{ir} code it looks like the first bug occurs because the comparison of the input \textit{done} being performed in another state than where it is used as loop exit-condition. In the same state, \textit{inData} is sign-extended, as it is a 32-bit variable being assigned to a 64-bit variable. Both these results are stored to temporary registers for use later, as shown below. From the simulation, it can be seen that this particular state is not visited again when the loop has been entered.
 \lstset{language=llvm,style=LLVMstyle}
 \begin{lstlisting}
 %6 = icmp eq i32 %done, 0
@@ -283,9 +283,9 @@ These bugs are not critical to this case, as both bugs will be identical to each
 \section{Path and hold violations}
 Some of the designs reports violating path length and hold times in synthesis. For a real circuit this would be a problem. To get rid of these violations, the target clock speed during synthesis could be decreased to something below the maximum frequency of the design. However, the clock speed is most of the time the only thing you cannot change in your design, and design compiler will try to create the circuit that meets timing. If timing is not met, the circuit description should be changed. This means that from our methodology, we will generate many circuits and only the ones that meet timing will be presented as an accepted solution. Ideally, the framework would implement a feedback loop, but for the sake of this proof-of-concept, a long list of solutions are produced and only the best ones are selected.
 
-\section{LegUp specific code optimization}
+\section{\label{sec:codeoptimization}LegUp specific code optimization}
 
-When going trough the register-count from synthesis, it were noticed that the HLS generated designs implemented both the array \textit{sr} and \textit{products} as RAM modules using registers, while in the design written directly in Verilog, the \textit{sr}-array is the only signal using registers. When looking at the following snippet from the FIR-filter source code, listed in \cref{subsec:cfircode}:
+When going trough the register-count from synthesis, it were noticed that the HLS generated designs implemented both the array \textit{sr} and \textit{products} as RAM modules using registers, while in the design written directly in Verilog, the \textit{sr}-array is the only signal using registers. When looking at the following snippet from the \gls{fir}-filter source code, listed in \cref{subsec:cfircode}:
 \lstset{language=C,style=CStyle}
 \begin{lstlisting}
 for (int k = 1; k < TAPS ; k++){
