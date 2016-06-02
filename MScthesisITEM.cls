@@ -90,6 +90,8 @@
 \RequirePackage{pdfpages}
 \RequirePackage{wrapfig}
 \captionnamefont{\bfseries}
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata}
 
 %% In case you need to have subfigures; note that there will be a warning for the caption package
  \let\subcaption\undefined

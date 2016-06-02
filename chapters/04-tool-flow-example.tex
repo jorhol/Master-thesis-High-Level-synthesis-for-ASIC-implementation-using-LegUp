@@ -1,5 +1,5 @@
 \chapter{\label{chp:toolflowex}Tool-flow example}
-To give you a general idea of how the tool-flow works, this section will give a simple example starting with the C-code and show the output all the way through HLS, simulation, synthesis, layout and power analysis. \Cref{lst:ccodelisting} shows a simple C-program with two functions, \textit{main} and \textit{squared}. The \textit{main}-function will be the top function and this function takes three input parameters, \textit{done}, \textit{inData} and \textit{\_\_out\_outData}. The \textit{main}-function contains a while loop, which will run as long as the input parameter \textit{done} is set to zero. Inside the loop the function \textit{squared} is called with the argument from \textit{inData} and the return value from \textit{squared} is assigned to the input argument \textit{\_\_out\_outData}. If you are familiar with C programming, you might think that it is a weird thing to be assigning values to the inputs, but as described in \cref{sec:assValueToOutput}, this is implemented as a way to get multiple outputs to the generated module. Notice also the \textit{volatile} keyword in the declaration of the \textit{\_\_out\_outData} parameter, as this is a necessary part of the generating outputs.
+This chapter will give a detailed description of the information- and tool-flow, using the adapted version of LegUp and the other tools used in the creation of a framework. S simple example C-code will be used, and the flow and generated information will be described all the way through HLS, simulation, synthesis, layout and power analysis. \Cref{lst:ccodelisting} shows a simple C-code with two functions, \textit{main} and \textit{squared}. The \textit{main}-function will be the top-lvel function, taking three input parameters; \textit{done}, \textit{inData} and \textit{\_\_out\_outData}. The \textit{main}-function contains a while loop, which will run as long as the input parameter \textit{done} is set to zero. Inside the loop the function \textit{squared} is called with the argument from \textit{inData} and the return value from \textit{squared} is assigned to the input argument \textit{\_\_out\_outData}. If you are familiar with C programming, you might think that it is a weird thing to be assigning values to a non-pointer parameter, but as described in \cref{sec:assValueToOutput}, this is implemented as a way to get multiple outputs to the generated module. Notice also the \textit{volatile} keyword in the declaration of the \textit{\_\_out\_outData} parameter, as this is a necessary part of generating outputs.
 \lstset{language=C++,style=Cstyle}
 \begin{lstlisting}[caption={Simple C-code example},label=lst:ccodelisting]
 int squared (int base) {
@@ -15,7 +15,7 @@ int main (int done, int inData, volatile int __out_outData) {
 \end{lstlisting}
 
 \section{HLS with LegUp}
-The HLS-tool is the only part of the tool-flow located on another computer than the rest. This is not an issue when running a single design through the tool-flow, as the file can simply be copy-pasted to the destination. As described in \
+The HLS-tool is the only part of the tool-flow located on another computer than the rest. This is not an issue when running a single design through the tool-flow, as the file can simply be copy-pasted to the destination. As suggested in \cite{holm2015pro}, SSH and SCP can be also be used for copying files and executing commands on remote machines.
 \subsection{Constraint files}
 LegUp uses constraint files to set constraints and settings for the \gls{hls}. The default values for necessary constraints is set in the default constraint-file located in \textasciitilde/legup4-0/example/legup.tcl. The default constraints can be overridden by adding a local constraint file. The filename of the local constraint file need to be specified in the Makefile for the constraints to take effect. This is done by adding the line \verb!LOCAL_CONFIG = -legup-config=config.tcl! to the Makefile, where config.tcl is the filename of the local constraint-file. 
 \subsection{Makefile}
@@ -203,13 +203,48 @@ default:
 	next_state = cur_state;
 endcase
 end
-\end{lstlisting}
+%\end{lstlisting}
+%\begin{figure}[hbpt]
+%\centering
+%\includegraphics[width=0.99\textwidth]{../figs/VerilogFSM.png}
+%\caption{\label{fig:verilogfsm}State diagram of generated FSM}
+%\end{figure}
 \begin{figure}[hbpt]
 \centering
-\includegraphics[width=0.99\textwidth]{../figs/VerilogFSM.png}
+\begin{tikzpicture}[>=stealth',shorten >=1pt,auto,node distance=2.9cm,thick]
+  \tikzstyle{every state}=[fill=cyan,text=black,font=\Huge]
+  \node[state,accepting] (A)   [minimum width=1.4cm]   {$0$};
+  \node[state]         (B) [text width=1.4cm, align = center, below right of=A]  {$1$};
+  \node[state]         (C) [text width=1.4cm, align = center, below right of=B]  {$2$};
+  \node[state]         (D) [text width=1.4cm, align = center, below left of=B] {$3$};
+  \node[state]         (H) [text width=1.4cm, align = center, below left of=A] {$7$};
+  \node[state]         (G) [text width=1.4cm, align = center, below left of=H] {$6$};
+  \node[state]         (F) [text width=1.4cm, align = center, below of=G] {$5$};
+  \node[state]         (E) [text width=1.4cm, align = center, right of=F] {$4$};
+  \node[state]         (I) [text width=1.4cm, align = center, right of=E]  {$8$};
+
+
+  \path[->] (A)  edge               node {} (B)
+            (B)  edge [loop right]  node {} (B)
+                 edge               node {} (C)
+            (C)  edge [loop right]  node {} (C)
+                 edge               node {} (D)
+            (D)  edge [loop above]  node {} (D)
+                 edge               node {} (E)
+                 edge               node {} (I)
+            (E)  edge [loop below]  node {} (E)
+                 edge               node {} (F)
+            (F)  edge [loop left]   node {} (F)
+                 edge               node {} (G)
+            (G)  edge [loop left]   node {} (G)
+                 edge               node {} (H)
+            (H)  edge [loop left]   node {} (H)
+                 edge               node {} (D)
+            (I)  edge [loop right]  node {} (I);
+\end{tikzpicture}
 \caption{\label{fig:verilogfsm}State diagram of generated FSM}
 \end{figure}
-By looking at the state diagram, some parts from the C-code can be recognized. \textit{LEGUP\_0} is the initial state and the two following states is allocating and storing the volatile input parameter. \textit{LEGUP\_F\_main\_BB\_2\_3} is where the condition checking for the while loop is performed. The states below and left of the condition state is the states inside the while loop, and \textit{LEGUP\_F\_main\_BB\_6\_8} is the exit-state, signalizing the completion of the program.
+By looking at the state diagram, some parts from the C-code can be recognized. \textit{0} is the initial state and the two following states is allocating and storing the volatile input parameter. \textit{3} is where the condition checking for the while loop is performed. The states \textit{4}-\textit{7} are the states inside the while loop, while \textit{8} is the exit-state, signalizing the completion of the program.
 
 Some signal assignments are shown in \cref{lst:verilogsignalassignment}. Each assignment is printed with the corresponding LLVM operation commented abowe, to increase readability of the code. The later assignment of output signals are not generated directly from an LLVM operation and does thus not have this operation printed along the assignment.
 \begin{lstlisting}[caption={Verilog FSM},label=lst:verilogsignalassignment,float]
@@ -283,13 +318,11 @@ initial begin
     arg_inData <= 32'd100;
     
     @(posedge iterationFinish);
-    arg_inData <= 32'd498;
-    
-    @(posedge iterationFinish);
     arg_done <= 32'd1;
 end
 \end{lstlisting}
-\Cref{lst:tbcases} shows the testcases we apply to the circuit. Initial values of the inputs \textit{done} and \textit{inData} is set, and the testbench waits for a falling edge of the reset signal, set by the automatic generated testbench shell, before setting the \textit{start}-flag high for one clock cycle. At the two folloeing rising edges of the \textit{iterationFinished}-flag, a new value is assigned to the input \textit{inData}. At the third rising edge of the \textit{iterationFinished}-flag, the input \textit{done} is set to one, indicating the end of this run. A waveform from the simulation is shown in \cref{fig:simulationwave}. From the waveform we observe that the circuit has the expected behaviour. When the \textit{start}-flag is set, the FSM starts and the sub-module \textit{squared} starts to calculate the output value. When \textit{cur\_state} of the \textit{main}-module equals 7, the calculated value is assigned to the output \textit{outData}, and the \textit{valid}-flag for this output is set. The value on the output is correctly calculated for the given testcases. When \textit{cur\_state} equals 3, the {iterationFinish}-flag is set, as this is the state where the condition for the while loop is evaluated, i.e. one iteration of the loop is complete. Notice that the \textit{iteartionFinish}-flag is not set in the first occurrence of \textit{cur\_state} = 3, as this is the first encounter of the loop and not a finished iteration. When the input \textit{done} is set to 1 after the third \textit{iterationFinish}-flag, we observe that the loop terminates and the \textit{finish}-flag is set, indicating the end of the run.
+\Cref{lst:tbcases} shows the testcases we apply to the circuit. Initial values of the inputs \textit{done} and \textit{inData} is set, and the testbench waits for a falling edge of the reset signal, set by the automatic generated testbench shell, before setting the \textit{start}-flag high for one clock cycle. At the following rising edge of the \textit{iterationFinished}-flag, a new value is assigned to the input \textit{inData}. At the second rising edge of the \textit{iterationFinished}-flag, the input \textit{done} is set to one, indicating the end of this run. A waveform from the simulation is shown in \cref{fig:simulationwave}. The signals between the blue lines are from the \textit{main}-module, while the signals between the red lines are from the \textit{squared} sum-module. From the waveform we observe that the circuit has the expected behaviour. When the \textit{start}-flag is set, the FSM starts and the sub-module \textit{squared} starts to calculate the output value. When \textit{cur\_state} of the \textit{main}-module equals 7, the calculated value is assigned to the output \textit{outData}, and the \textit{valid}-flag for this output is set. The value on the output is correctly calculated for the given testcases. When \textit{cur\_state} equals 3, the {iterationFinish}-flag is set, as this is the state where the condition for the while loop is evaluated, i.e. one iteration of the loop is complete. Notice that the \textit{iteartionFinish}-flag is not set in the first occurrence of \textit{cur\_state} = 3, as this is the first encounter of the loop and not a finished iteration. When the input \textit{done} is set to 1 after the third \textit{iterationFinish}-flag, we observe that the loop terminates and the \textit{finish}-flag is set, indicating the end of the run.
+
 \begin{figure}[hbpt]
 \centering
 \includegraphics[width=0.99\textwidth]{../figs/SimulationWaveEX.png}
@@ -307,7 +340,7 @@ The design is synthesized using a 180nm library. After synthesis, the circuitry 
     \centering
     \begin{tabular}{lcr}
         \textbf{Parameter} && \textbf{Value} \\
-        Combinational Area && 23853.614678 \\
+        Combinational Area && 1.453853.614678 \\
         Noncombinational Area && 21015.456253 \\
         Buf/Inv Area && 1766.318423 \\
         Total Buffer Area && 39.92 \\
@@ -362,7 +395,7 @@ Layout generates the final reports of area and critical path lengt. The reported
     \label{tab:layoutreportex}
 \end{table}
 
-\section{Power estimation}
+\section{Power analysis}
 Power analysis uses switching data in the VCD- and SAIF-file generated under simulation to estimate the power consumption. As there are five different power scenarios defined, five results for each parameter is reported. The reporting from power analysis is shown in \cref{tab:powestreportex}. In this simple example, all power scenarios report the same power consumption, while in a larger design these values will vary. With a total estimated power consumption of 179.6$\mu$W, not much power is consumed in this chip, but again it is a small design.
 
 \begin{table}[hbpt]
