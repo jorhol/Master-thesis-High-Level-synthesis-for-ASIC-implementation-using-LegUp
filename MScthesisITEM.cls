@@ -74,7 +74,7 @@
 
 % Links
 \usepackage{url}
-\usepackage{breakurl} 
+%\usepackage{breakurl} 
 \RequirePackage[breaklinks]{hyperref}
 \RequirePackage{memhfixc}
 \hypersetup{

@@ -6,12 +6,28 @@
 \textbf{Student:}	& \theauthor \\
 \end{tabular}
 
-\vspace{2ex}
+\vspace{6ex}
 \noindent\textbf{Problem description:}
-\vspace{1ex}
+\vspace{4ex}
+
+Architectural exploration is a long and complex process where a number of hardware architectures are built and evaluated based on minimum performance requirements and worst-case operational scenarios. With this method, satisfactory results can be achieved if a diverse number of candidates are produced. However, the number of architectures to be evaluated is limited by time and engineering resources. In this context, High Level Synthesis (HLS) is a compelling alternative to shorten the development time, and consequently, increasing the number of architectures that can be evaluated during the exploration. Furthermore, by automating the entire architecture exploration process, the optimization engine can take advantage of the higher level of abstraction and generate far more and diverse architectures than it would be possible by parametrized RTL.
+
+During the autumn of 2015, a project was conducted to evaluate the open-source HLS tool LegUp \cite{holm2015pro}, and whether it can be used in a framework for architectural exploration of digital hardware. During the work with the project some fundamental issues were exposed, limiting the tool’s usefulness for our initial intentions. The main issues are related to input and output of the generated modules, structure of memory management, and size of signals.
+
+The goal of this master thesis is to resolve the encountered issues, and if time allows it, start building an initial framework for architectural exploration.
+
+\textbf{Possible sub-tasks and goals of this thesis are:}
+\begin{itemize}
+    \item Explore the two approaches proposed in the project for resolving the encountered issues.
+    \item Determine if LegUp’s C-like memory-bound architecture can be eliminated by de-referencing pointers or turn memory elements into generic signals.
+    \item Re-evaluate if LegUp is capable of generating synthesizable Verilog HDL for ASIC implementation and if it can be used in a framework for automatic architectural exploration.
+    \item Set an initial HLS framework for architectural exploration of digital hardware.
+    \item Create scripts to automate simulation, synthesis, and power dissipation extraction.
+    \item Integrate Nordic Semiconductor's coding style and practices into LegUp Verilog libraries, i.e., interfaces, parameters, naming conventions, power/clock domains, etc.
+\end{itemize}
 
 
-\vspace{2ex}
+\vspace{6ex}
 
 \noindent
 \begin{tabular}{@{}p{4cm}l}

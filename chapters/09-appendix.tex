@@ -1,5 +1,5 @@
-\chapter{Appendix}
-\section{\label{sec:sourcecode}Source code of FIR-filter reference design}
+\chapter{Source code listings}
+\section{\label{sec:sourcecode}FIR-filter reference design}
 \subsection{\label{subsec:cfircode}C source code}
 \lstset{language=C,style=CStyle}
 \begin{lstlisting}
@@ -31,7 +31,7 @@ int main(int done, int inData, volatile long long int __out_outData) {
   return 0;
 }
 \end{lstlisting}
-
+\clearpage
 \subsection{\label{subsec:cfircode2}Optimized C source code}
 \begin{lstlisting}
 #include <stdint.h>
@@ -56,6 +56,7 @@ int main(int done, int inData, volatile long long int __out_outData) {
   return 0;
 }
 \end{lstlisting}
+\clearpage
 \subsection{\label{subsec:verilogfircode}Verilog source code}
 \lstset{language=Verilog,style=VerilogStyle}
 \begin{lstlisting}
@@ -107,7 +108,7 @@ module fir (
 	
 endmodule
 \end{lstlisting}
-
+\clearpage
 \subsection{\label{subsec:firfiltertb}Testbench for FIR-filter}
 \lstset{language=Verilog,style=VerilogStyle}
 \begin{lstlisting}

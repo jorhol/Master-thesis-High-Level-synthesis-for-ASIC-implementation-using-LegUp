@@ -1,18 +1,26 @@
 \chapter{\label{chp:adaptinglegup}Adapting LegUp}
 The main focuses of this project has been to resolve the issues encountered in \cite{holm2015pro}, to make LegUp able to generate Verilog more suited for ASIC implementation and synthesis. This chapter will describe the process of resolving these issues and other alterations that has been made in order to ease the creation of a framework for architectural exploration of hardware.
 \section{Approach}
-In the future works section of \cite{holm2015pro}, two different approaches to resolve the issues were proposed; post-processing and pre-processing. Both approaches have been explored, but the main section of solutions are based on the pre-processing alternative. The two following subsection will present the two approaches and give some reasoning to why one is chosen over the other.
+In the future works section of \cite{holm2015pro}, two different approaches to resolve the issues were proposed; post-processing and pre-processing. Both approaches have been explored, but the main section of solutions are based on the pre-processing alternative. The two following subsection will present the two approaches and give some reasoning to why one is preferred over the other.
 \subsection{Post-processing}
 With the post-processing approach, the idea is to alter the Verilog-code after it is generated, to make it more suitable for \gls{asic} implementations. This approach is easy to work with, as we can concentrate on a single file, the output Verilog file. The drawback of this approach is that you only have the information available in the Verilog file at hand, making it hard to add functionality to the tool.
 
 There exist multiple parser tools for Verilog, for instance Verilog-Perl from VeriPool, a Verilog parser library for Perl \cite{verilogperl}, and pyverilog, a Hardware Design Processing Toolkit for Python \cite{Takamaeda2015Pyverilog}. These tools can be used to parse the Verilog file, to build module, signal, and port hierarchy, and easily add, alter, or remove objects.
 \subsection{Pre-processing}
 The pre-processing approach involves changing the libraries in LegUp that performs the HLS operations, like allocation, scheduling, RTL-generation and Verilog printing. This requires deep knowledge of the libraries and its connections, to find a good way to change the output. The large libraries is the main drawback of this approach. As LegUp is open-source, the possibilities of this approach are endless, but getting the necessary knowledge of the libraries takes time.
-\subsection{The chosen approach}
-As it looked like the easiest solution, the post-processing alternative were explored first. However, it were soon realised that the things that could be done easily with this approach, also could be done quite easily with the pre-processing approach. Some larger issues, for instance assigning values to outputs, were not easily solvable by using the post-processing method. The focus were therefore directed towards the pre-processing alternative. One advantage of this approach is that the original functionality of LegUp can be kept, while adding new functionality. The switching between original and altered versions are done using TCL-commands.
+\subsection{The used approach}
+As it looked like the easiest solution, the post-processing alternative were explored first. However, it were soon realised that the things that could be done easily with this approach, also could be done quite easily with the pre-processing approach. Some larger issues, for instance assigning values to outputs, were not easily solvable by using the post-processing method. The focus were therefore directed towards the pre-processing alternative. One advantage of this approach is that the original functionality of LegUp can be kept, while adding new functionality. The switching between original and altered versions are done using TCL-commands. The post-processing method were used at a later stage, but here on the LLVM \gls{ir}-code rather than the generated Verilog.
 
 \section{TCL commands}
-LegUp uses TCL commands for setting constraints and configure the HLS-flow. In order to not change the original implementation of LegUp, and to provide additional functionality, some new commands were added. New TCL-parameters can easily be added to LegUp by adding the parameter name to the array \textit{validParameters} and increasing the parameter \textit{NUM\_PARAMETERS} in the file \textit{LegupConfig.cpp}. The value of the parameter can then be read using the function call \verb!LEGUP\_CONFIG->getParameter("\%parameterName\%")! to get a string, or \verb!LEGUP\_CONFIG->getParameterInt("\%parameterName\%")! to get an integer. LegupConfig.h must be included to get access to LEGUP\_CONFIG. The most common use of TCL-parameters is to check whether a parameter is set, and perform some action based on this. Parameters can also be used to set values of variables. An example could be a parameter that decides if a designated top-module shall be generated or not. The parameter is define by adding the below line to the constraint file:
+LegUp uses TCL commands for setting constraints and configure the HLS-flow. In order to not change the original implementation of LegUp, and to provide additional functionality, some new commands were added. New TCL-parameters can easily be added to LegUp by adding the parameter name to the array \textit{validParameters} and increasing the parameter \textit{NUM\_PARAMETERS} in the file \textit{LegupConfig.cpp}. The value of the parameter can then be read using the function call:
+
+\verb!LEGUP_CONFIG->getParameter("parameterName")!
+
+to get a string, or 
+
+\verb!LEGUP_CONFIG->getParameterInt("parameterName")! 
+
+to get an integer. LegupConfig.h must be included to get access to LEGUP\_CONFIG. The most common use of TCL-parameters is to check whether a parameter is set, and perform some action based on this. Parameters can also be used to set values of variables. An example could be a parameter that decides if a designated top-module shall be generated or not. The parameter is define by adding the below line to the constraint file:
 
 \begin{verbatim}
 set_parameter PRINT_TOP_MODULE 1
@@ -39,7 +47,7 @@ if(LEGUP_CONFIG->getParameter("TOP_MODULE_NAME") {
 \end{lstlisting}
 In the second example, the getParameter() function will return false if the parameter is not set.
 
-Other TCL-commands can also be defined by adding the following line to the file \textit{LegupConfig.cpp}:
+Other TCL-commands can also be defined by adding the following line to the file \textit{LegupTcl.cpp}:
 \begin{lstlisting}
 Tcl_CreateCommand(interp,
                 "set_custom_main_function",
@@ -110,7 +118,8 @@ Inspiration for this method comes from the parameter \textit{set\_custom\_verilo
 \section{\label{sec:assValueToOutput}Assigning values to outputs}
 In \cref{subsec:inoutdecl} two methods of declaring parameters as outputs in the generated module were presented. Unfortunately, assigning values to a input parameter is undefined behaviour in C. In the LLVM \gls{ir} output from the compiler, no assignment to any parameter is performed. The alternative of adapting the clang-compiler to threat name-prefixed input parameters as outputs were considered, but it would be time-consuming to dig into the clang-libraries as well. By disabling optimization of the \gls{ir} or declaring the output-parameter as \textit{volatile}, the assignment operation is present in the \gls{ir}-code. Unfortunately, the assignment in the \gls{ir}-code is not to a variable but to a local RAM module, generated for the parameter. No assignments to the output exists.
 
-When disabling the optimization-passes in the compiler, some patterns were noticed that could provide useful information. The idea were to look for assignment information in the LLVM \gls{ir}-code, which could used in LegUp to assign the correct values to the output. To show how this information can be used to assign values to outputs, it is best to use a simple example. In \cref{lst:cllvmirparsercode}, a short C-code is listed. When running the pure-HW flow of LegUp, the human readable format of the LLVM \gls{ir}-code is output to a file called \textit{designName.ll}.
+When disabling the optimization-passes in the compiler, some patterns were noticed that could provide useful information. The idea were to look for assignment information in the LLVM \gls{ir}-code, which could used in LegUp to assign the correct values to the output. To show how this information can be used to assign values to outputs, it is best to use a simple example. In \cref{lst:cllvmirparsercode}, a short C-code is listed. When running the pure-HW flow of LegUp on this code, the human readable format of the LLVM \gls{ir}-code is output to a file called \textit{designName.ll}, shown in \cref{lst:llvmirparsercode}.
+\clearpage
 \lstset{language=C,style=Cstyle}
 \begin{lstlisting}[caption={Simple C-code example for LLVM IR parsing},label=lst:cllvmirparsercode]
 void main(int inDataA, int inDataB, volatile int __out_outData) {
@@ -290,7 +299,7 @@ The RAM module will be named by the same convention as signals, naming the RAM f
   \end{algorithmic}
 \end{algorithm}
 
-\subsection{Removing local RAMs}
+\subsection{\label{subsec:removerams}Removing local RAMs}
 As described in \cref{sec:assValueToOutput}, each parameter declared as \textit{volatile} will generate a RAM module. After reassigning the stores to the output port, the generated RAM modules are no longer needed. These RAM modules can be removed to save area and reduce power consumption. To make this operation optional, the TCL-parameter \textit{REMOVE\_UNUSED\_LOCAL\_RAMS} were added. By setting this parameter, the local RAM modules will be removed. All local RAMs are stored together with its corresponding function (from the C-code) in a variable, \textit{isLocalFunctionRam}. To remove the RAM, it is simply removed from this variable. In addition to removing the RAM module, all signals to and from the RAM needs to be removed as well. Notice that only the RAMs generated by output parameters are removed from the \textit{main}-module. RAM modules can also be generated by arrays and other large data structures, but these will not be removed. This method of removing the RAMs does not remove the states for allocation and stores to the RAMs present in the FSM generated by LegUp. 
 
 \section{\label{sec:streamingio}Streaming inputs/outputs}
