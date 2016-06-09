@@ -237,7 +237,7 @@ if (LEGUP_CONFIG->getParameterInt("ASIC_IMPLEMENTATION")) {
 \end{lstlisting}
 \clearpage
 \section{\label{sec:hlsscriptsourcecode}Script for running framework}
-\lstset{language=[gnu] make, style=Cstyle}
+\lstset{language=[gnu] make, style=Cstyle, morestring=[s]""}
 \begin{lstlisting}[caption={HLS Script source code},label=lst:hlsscriptsourcecode]
 #!/bin/bash
 rm -f HLSscript.log
@@ -281,7 +281,7 @@ scp -P $REMOTEPORT $LOCALDIR/sim/tb/test_$DESIGNNAME\_testcases.v $LEGUPUSER@$RE
 scp -P $REMOTEPORT $LOCALDIR/hls/constraints.xlsx $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/ #Copy design constraint definitions to LegUp image
 ssh $LEGUPUSER@$REMOTEIP -p $REMOTEPORT $SSHCOMMANDS2 #Run commands and script for generating constraint and Makefiles
 scp -P $REMOTEPORT $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/constraints.csv $LOCALDIR/hls/ #Copy CSV file from LegUp image
-sed 's/\"//g' -i $LOCALDIR/hls/constraints.csv
+sed 's/\''//g' -i $LOCALDIR/hls/constraints.csv # Remove excess quotes
 rm -r $LOCALDIR/hls/makefiles $LOCALDIR/hls/constraintfiles
 mkdir $LOCALDIR/hls/makefiles $LOCALDIR/hls/constraintfiles
 mkdir $LOCALDIR/reports
@@ -303,6 +303,11 @@ while [ $COUNTER -lt $NUMRUNS ]; do
 	
 	scp -P $REMOTEPORT $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/$DESIGNNAME.v $LOCALDIR/rtl/ #Copy Verilog file from LegUp image
 	scp -P $REMOTEPORT $LEGUPUSER@$REMOTEIP:$REMOTEDIR/$DESIGNNAME/test_main.v $LOCALDIR/sim/tb/test_$DESIGNNAME.v #Copy Verilog testbench file from LegUp image
+	
+	MEM_CRTL_EXIST=$(grep -c "module memory_controller" $LOCALDIR/rtl/$DESIGNNAME.v)
+	if [ $MEM_CRTL_EXIST -gt 0 ]; then
+		echo "memory_controller module exist in design. Please check your design" 1>&3
+	fi
 	
 	find $LOCALDIR/rtl/$DESIGNNAME.v -type f -exec sed -i "s/module main/module $DESIGNNAME/g" {} \; #Replace top modulename main with designname
 	
@@ -389,7 +394,7 @@ while [ $COUNTER -lt $NUMRUNS ]; do
 	totpow=${totpow//Total Power            = /}
 	echo $totpow>>$LOCALDIR/reports/total_power.rpt
 		
-	echo "Register count\tCombinational Area\tNon-combinational Area\tDesign Area\tSwitching Power 0\tSwitching Power 1\tSwitching Power 2\tSwitching Power 3\tSwitching Power Inactive\tInternal Power 0\tInternal Power 1\tInternal Power 2\tInternal Power 3\tInternal Power Inactive\tLeakage Power 0\tLeakage Power 1\tLeakage Power 2\tLeakage Power 3\tLeakage Power Inactive\tTotal Power 0\tTotal Power 1\tTotal Power 2\tTotal Power 3\tTotal Power Inactive" > all_results.rpt
+	echo "Register count\tCombinational Area\tNon-combinational Area\tDesign Area\tSwitching Power\tInternal Power\tLeakage Power\tTotal Power" > all_results.rpt
 	paste register_count.rpt combinational_area.rpt noncombinational_area.rpt design_area.rpt net_switching_power.rpt cell_internal_power.rpt cell_leakage_power.rpt total_power.rpt >> all_results.rpt
 	
 	#Store results in dedicated folder

@@ -1,5 +1,5 @@
 \chapter{\label{chp:toolflowex}Tool-flow example}
-This chapter will give a detailed description of the information- and tool-flow, using the adapted version of LegUp and the other tools used in the creation of a framework. A simple C-code example will be used, and the flow and generated information will be described all the way through HLS, simulation, synthesis, layout and power analysis. \Cref{lst:ccodelisting} shows a simple C-code with two functions, \textit{main} and \textit{squared}. The \textit{main}-function will be the top-lvel function, taking three input parameters; \textit{done}, \textit{inData} and \textit{\_\_out\_outData}. The \textit{main}-function contains a while loop, which will run as long as the input parameter \textit{done} is set to zero. Inside the loop the function \textit{squared} is called with the argument from \textit{inData} and the return value from \textit{squared} is assigned to the input argument \textit{\_\_out\_outData}. If you are familiar with C programming, you might think that it is a weird thing to be assigning values to a non-pointer parameter, but as described in \cref{sec:assValueToOutput}, this is implemented as a way to get multiple outputs to the generated module. Notice also the \textit{volatile} keyword in the declaration of the \textit{\_\_out\_outData} parameter, as this is a necessary part of generating outputs.
+This chapter will give a detailed description of the information- and tool-flow, using the adapted version of LegUp and the other tools used in the creation of a framework. A simple C-code example will be used, and the flow and generated information will be described all the way through \gls{hls}, simulation, synthesis, layout and power analysis. \Cref{lst:ccodelisting} shows a simple C-code with two functions, \textit{main} and \textit{squared}. The \textit{main}-function will be the top-lvel function, taking three input parameters; \textit{done}, \textit{inData} and \textit{\_\_out\_outData}. The \textit{main}-function contains a while loop, which will run as long as the input parameter \textit{done} is set to zero. Inside the loop the function \textit{squared} is called with the argument from \textit{inData} and the return value from \textit{squared} is assigned to the input argument \textit{\_\_out\_outData}. If you are familiar with C programming, you might think that it is a weird thing to be assigning values to a non-pointer parameter, but as described in \cref{sec:assValueToOutput}, this is implemented as a way to get multiple outputs to the generated module. Notice also the \textit{volatile} keyword in the declaration of the \textit{\_\_out\_outData} parameter, as this is a necessary part of generating outputs.
 \lstset{language=C++,style=Cstyle}
 \begin{lstlisting}[caption={Simple C-code example},label=lst:ccodelisting]
 int squared (int base) {
@@ -15,9 +15,9 @@ int main (int done, int inData, volatile int __out_outData) {
 \end{lstlisting}
 
 \section{HLS with LegUp}
-The HLS-tool is the only part of the tool-flow located on another computer than the rest. This is not an issue when running a single design through the tool-flow, as the file can simply be copy-pasted to the destination. As suggested in \cite{holm2015pro}, SSH and SCP can be also be used for copying files and executing commands on remote machines.
+The \gls{hls}-tool is the only part of the tool-flow located on another computer than the rest. This is not an issue when running a single design through the tool-flow, as the file can simply be copy-pasted to the destination. As suggested in \cite{holm2015pro}, SSH and SCP can be also be used for copying files and executing commands on remote machines.
 \subsection{Constraint files}
-LegUp use constraint files to set constraints and settings for the \gls{hls}. The default values for necessary constraints is set in the default constraint-file located in \textasciitilde/legup4-0/example/legup.tcl. The default constraints can be overridden by adding a local constraint file. The filename of the local constraint file must be specified in the Makefile for the constraints to take effect. This is done by adding the line \verb!LOCAL_CONFIG = -legup-config=config.tcl! to the Makefile, where \textit{config.tcl} is the filename of the local constraint file. The example code is run with the constraints listed as required in \cref{subsec:legupconstraintstheory}. All other constraints are left to default values.
+LegUp use constraint files to set constraints and settings for the \gls{hls}. The default values for necessary constraints is set in the default constraint-file located in \textit{\textasciitilde/legup4-0/example/legup.tcl}. The default constraints can be overridden by adding a local constraint file. The filename of the local constraint file must be specified in the Makefile for the constraints to take effect. This is done by adding the line \verb!LOCAL_CONFIG = -legup-config=config.tcl! to the Makefile, where \textit{config.tcl} is the filename of the local constraint file. The example code is run with the constraints listed as required in \cref{subsec:legupconstraintstheory}. All other constraints are left to default values.
 \subsection{Makefile}
 A local Makefile is required to compile the project. The minimal local Makefile of LegUp contains the following three lines:
 \begin{verbatim}
@@ -26,9 +26,9 @@ A local Makefile is required to compile the project. The minimal local Makefile 
   include $(LEVEL)/Makefile.common
 \end{verbatim}
 
-The Variable \textit{NAME} is the name of the design. This variable will be used to name the output-files of the design. The Variable \textit{LEVEL} indicates the number of directory-levels down to the design from the directory where the common Makefile is located. 1 level equals \verb!..!, 2 levels equal \verb!../..! and so on, just like in a standard Linux shell. Other parameters and flags like \textit{NO\_OPT} and \textit{NO\_INLINE} can be added to the Makefile to disable optimization and avoid inlining of functions in the compiler. In some cases, especially with simple test-programs, these two flags are necessary to prevent the compiler from optimize away the whole program.
+The Variable \textit{NAME} is the name of the design. This variable will be used to name the output-files of the design. The Variable \textit{LEVEL} indicates the number of directory-levels down to the design from the directory where the common Makefile is located. 1 level equals \verb!..!, 2 levels equal \verb!../..! and so on, just like in a standard Linux shell. Other parameters and flags like \textit{NO\_OPT} and \textit{NO\_INLINE} can be added to the Makefile to disable optimization and avoid inlining of functions in the compiler. In some cases, especially with simple test-programs, these two flags are necessary to prevent the compiler from optimizing away the whole program.
 \subsection{Compilation}
-The C-code is compiled into LLVM \gls{ir} using the clang frontend for the LLVM compilation framework. The initial result before any \gls{lto} is performed, is shown in \cref{lst:llvmirprelto}. If you are familiar with assembly code, you might recognize some of the operations, like \textit{alloca}, \textit{load}, \textit{store}, \textit{mul} and \textit{icmp}. Each define block corresponds to one function from the C-code. The \textit{main}-function, which contains a while-loop, is split into multiple labels. The first section refers to the input parameters and memory allocation and storing of these. Temporary registers, declared on the form \%1, \%2 .. \%N, are inserted where needed. The section from the line "\textit{; <label>:4}" is the checking of the condition of the while loop. Further, \textit{label 7} is operations inside the while loop, and \textit{label 10} is operations after the loop has exited.
+The C-code is compiled into LLVM \gls{ir} using the clang frontend for the LLVM compilation framework. The initial result before any \gls{lto}s are performed, is shown in \cref{lst:llvmirprelto}. If you are familiar with assembly code, you might recognize some of the operations, like \textit{alloca}, \textit{load}, \textit{store}, \textit{mul} and \textit{icmp}. Each \textit{define}-block corresponds to one function from the C-code. The \textit{main}-function, which contains a while-loop, is split into multiple labels. The first section refers to memory-allocation and storing of the input-parameters. Temporary registers, declared on the form \%1, \%2 .. \%N, are inserted where needed. The section from the line "\textit{; <label>:4}" is the checking of the condition of the while loop. Further, \textit{label 7} is operations inside the while loop, and \textit{label 10} is operations after the loop has exited.
 \lstset{language=llvm,style=LLVMstyle}
 \begin{lstlisting}[caption={LLVM IR before LTO},label=lst:llvmirprelto]
 define i32 @squared(i32 %base) #0 {
@@ -66,7 +66,7 @@ define i32 @main(i32 %done, i32 %inData, i32 %__out_outData) #0 {
 }
 \end{lstlisting}
 \subsection{Link-time optimizations}
-By default, some optimization passes are run on the \gls{ir} to remove unnecessary operations and reduce the number of registers needed. All available passes are described in \cite{llvmpasses}, but the ones that is run by default is \textit{mem2reg}, \textit{instcombine}, \textit{loops}, \textit{loop-simplify}, \textit{basicaa}, \textit{indvars}, \textit{loop-pipeline}, \textit{internalize}, and \textit{globaldce}. These passes analyses, simplifies and removes operations. The result is listed in \cref{lst:llvmirpostlto}. Notice that the only stores left in the code is the ones connected to the input parameter declared as \textit{volatile}. The keyword \textit{volatile}, which is defined as \textit{likely to change suddenly and unexpectedly}, tells the compiler to avoid performing optimizations on this object, as it might change in an unexpected way. To avoid the undefined behavior of assigning values to an input-parameter to be removed by optimization passes, this keyword is necessary.
+By default, some optimization passes are run on the \gls{ir} to remove unnecessary operations and reduce the number of registers needed. All available passes are described in \cite{llvmpasses}, but the ones that is run by default is \textit{mem2reg}, \textit{instcombine}, \textit{loops}, \textit{loop-simplify}, \textit{basicaa}, \textit{indvars}, \textit{loop-pipeline}, \textit{internalize}, and \textit{globaldce}. These passes analyses, simplifies and removes operations. The post-\gls{lto}-code is listed in \cref{lst:llvmirpostlto}. Notice that the only stores left in the code is the ones connected to the input parameter declared as \textit{volatile}. The keyword \textit{volatile}, which is defined as \textit{likely to change suddenly and unexpectedly}, tells the compiler to avoid performing optimizations on this object, as it might change in an unexpected way. To avoid the undefined behavior of assigning values to an input-parameter to be removed by optimization passes, this keyword is necessary.
 
 \begin{lstlisting}[caption={LLVM IR after LTO},label=lst:llvmirpostlto]
 define internal i32 @squared(i32 %base) #0 {
@@ -94,7 +94,7 @@ define i32 @main(i32 %done, i32 %inData, i32 %__out_outData) #0 {
 }
 \end{lstlisting}
 
-Also notice that the storing and loading of the other input parameters has been swapped by referencing the input parameter register directly. For instance the four lines:
+Also notice that the storing and loading of the other input parameters have been swapped by referencing the input parameter register directly. For instance the four lines:
 
 \begin{lstlisting}
 %2 = alloca i32, align 4
@@ -107,7 +107,7 @@ has been transformed into the single line:
 %5 = call i32 @squared(i32 %inData) #1
 \end{lstlisting}
 \subsection{Verilog generation}
-The LegUp backend pass for LLVM is run on the \gls{ir} to generate Verilog. LegUp performs allocation, scheduling and builds RTL models of the functionality, based on given constraints. These RTL-models are printed to a file as Verilog HDL. \Cref{lst:verilogmodule1} shows the declaration of the \textit{main}-module, parameters representing states, port- and internal signal-declarations and instantiation of submodules from the output Verilog.
+The LegUp backend pass for LLVM is run on the \gls{ir} to generate Verilog. LegUp performs allocation, scheduling and build RTL-models of the functionality, based on given constraints. These RTL-models are printed to a file as Verilog HDL. \Cref{lst:verilogmodule1} shows the declaration of the \textit{main}-module, parameters representing states, port- and internal signal-declarations and instantiation of submodules from the output Verilog.
 \clearpage
 \lstset{language=Verilog, style=VerilogStyle}
 \begin{lstlisting}[caption={Verilog module, port, signal and parameter declaration, and sub-module instantiation},label=lst:verilogmodule1]
@@ -164,7 +164,7 @@ squared squared (
 	.arg_base (squared_arg_base)
 );
 \end{lstlisting}
-LegUp generate a FSM that perform calculations and generate outputs. The generated FSM-controller for the example C-code is listed in \cref{lst:verilogfsm}, and the state diagram of the FSM is shown in \cref{fig:verilogfsm}.
+LegUp generates a \gls{fsm} that perform calculations and generate outputs. The generated \gls{fsm}-controller for the example C-code is listed in \cref{lst:verilogfsm}, and the state diagram of the \gls{fsm} is shown in \cref{fig:verilogfsm}.
 \begin{lstlisting}[caption={Verilog FSM},label=lst:verilogfsm]
 always @(posedge clk) begin
 if (reset == 1'b1)
@@ -289,12 +289,12 @@ end
 \section{Simulation}
 \subsection{Simulation libraries}
 
-LegUp generates local RAMs for each output-parameter to the \textit{main}-module, as these parameters needs to be declared as volatile. In the declaration of the modules \textit{ram\_dual\_port} and \textit{rom\_dual\_port}, a conversion function from an Altera library is used to convert \textit{.mif} files to a format readable by Modelsim. Initially this library-file needed to be included in the design-filelist for the simulation to run successfully. However, a patch fixing a Xilinx related bug in LegUp \cite{legupxilinx} resolved this issue.
+LegUp generate a local \gls{ram}-module for each output-parameter to the \textit{main}-module, as these parameters needs to be declared as volatile. In the declaration of the modules \textit{ram\_dual\_port} and \textit{rom\_dual\_port}, a conversion function from an Altera library is used to convert \textit{.mif} files to a format readable by Modelsim. Initially this library-file needed to be included in the design-filelist for the simulation to run successfully. However, a patch fixing a Xilinx related bug in LegUp \cite{legupxilinx} resolved this issue.
 
 \subsection{Running simulation}
 The generated Verilog code is simulated using QuestaSim. The simulation is executed by running the script \textit{RUN\_ALL} located in the \textit{sim/run}-directory. The GUI of QuestaSim can be brought up by passing the argument \verb!-g! to the script, otherwise the simulation will be run in batch mode in the terminal.
 
-To simulate the design, a suitable testbench must be provided. Fortunately, LegUp generates a testbench shell, meaning we only need to add the testcases we want to apply to the circuit. Since this is a simple example, only a few testcases are provided to ensure the design works as expected. 
+To simulate the design, a suitable testbench must be provided. Since LegUp generate a testbench shell, it is only required to add the desired testcases that will be applied to the circuit. Since this is a simple example, only a few testcases are provided to ensure the design works as expected. 
 \begin{lstlisting}[caption={Testcases for the example testbench},label=lst:tbcases]
 initial begin
     arg_done <= 32'd0;
@@ -312,7 +312,7 @@ initial begin
     arg_done <= 32'd1;
 end
 \end{lstlisting}
-\Cref{lst:tbcases} shows the testcases we apply to the circuit. Initial values of the inputs \textit{done} and \textit{inData} is set, and the testbench waits for a falling edge of the reset signal, set by the automatic generated testbench shell, before setting the \textit{start}-flag high for one clock cycle. At the following rising edge of the \textit{iterationFinished}-flag, a new value is assigned to the input \textit{inData}. At the second rising edge of the \textit{iterationFinished}-flag, the input \textit{done} is set to one, indicating the end of this run. A waveform from the simulation is shown in \cref{fig:simulationwave}. The signals between the blue lines are from the \textit{main}-module, while the signals between the red lines are from the \textit{squared} sum-module. From the waveform we observe that the circuit has the expected behaviour. When the \textit{start}-flag is set, the FSM starts and the sub-module \textit{squared} starts to calculate the output value. When \textit{cur\_state} of the \textit{main}-module equals 7, the calculated value is assigned to the output \textit{outData}, and the \textit{valid}-flag for this output is set. The value on the output is correctly calculated for the given testcases. When \textit{cur\_state} equals 3, the {iterationFinish}-flag is set, as this is the state where the condition for the while loop is evaluated, i.e. one iteration of the loop is complete. Notice that the \textit{iteartionFinish}-flag is not set in the first occurrence of \textit{cur\_state} = 3, as this is the first encounter of the loop and not a finished iteration. When the input \textit{done} is set to 1 after the second \textit{iterationFinish}-flag, we observe that the loop terminates and the \textit{finish}-flag is set, indicating the end of the run.
+\Cref{lst:tbcases} shows the testcases we apply to the circuit. Initial values of the inputs \textit{done} and \textit{inData} is set, and the testbench waits for a falling edge of the reset signal, set by the automatic generated testbench shell, before setting the \textit{start}-flag high for one clock cycle. At the following rising edge of the \textit{iterationFinished}-flag, a new value is assigned to the input \textit{inData}. At the second rising edge of the \textit{iterationFinished}-flag, the input \textit{done} is set to one, indicating the end of this run. A waveform from the simulation is shown in \cref{fig:simulationwave}. The signals between the blue lines are from the \textit{main}-module, while the signals between the red lines are from the \textit{squared} sub-module. From the waveform the expected behavior of the circuit is observed. When the \textit{start}-flag is set, the \gls{fsm} starts and the sub-module \textit{squared} starts to calculate the output value. When \textit{cur\_state} of the \textit{main}-module equals 7, the calculated value is assigned to the output \textit{outData}, and the \textit{valid}-flag for this output is set. The value on the output is correctly calculated for the given testcases. When \textit{cur\_state} equals 3, the {iterationFinish}-flag is set, as this is the state where the condition for the while loop is evaluated, i.e. one iteration of the loop is complete. Notice that the \textit{iteartionFinish}-flag is not set in the first occurrence of \textit{cur\_state} = 3, as this is the first encounter of the loop and not a finished iteration. When the input \textit{done} is set to 1 after the second \textit{iterationFinish}-flag, we observe that the loop terminates and the \textit{finish}-flag is set, indicating the end of the run.
 
 \begin{figure}[hbpt]
 \centering
@@ -320,7 +320,7 @@ end
 \caption{\label{fig:simulationwave}Simulation waveform of example design}
 \end{figure}
 \section{Synthesis}
-The design is synthesized using a 180nm library. After synthesis, the circuitry of the design can be viewed in a GUI tool, but the output from LegUp is usually too large to understand. In \cref{fig:synthesiscircuittop} the top-module view from the tool is shown. The area and frequency reports from the synthesis is presented in \cref{tab:synthreportex}.
+The design is synthesized using a 180nm library. After synthesis, the circuitry of the design can be viewed in a GUI tool by running the command \verb!make open_mapped! and consecutively calling \verb!start_gui! in the \textit{dc\_schell} that is opened. The output from LegUp is usually too large to understand, reducing the usefulness of this GUI-tool. In \cref{fig:synthesiscircuittop} the top-module view from the tool is shown. The area and frequency reports from the synthesis is presented in \cref{tab:synthreportex}.
 
 \begin{figure}[hbpt]
 \centering
@@ -351,13 +351,13 @@ The design is synthesized using a 180nm library. After synthesis, the circuitry 
 \end{table}
 To put the area of the synthesized design in perspective, the library defines a two-port NAND gate to be 9.9792 area units. The number of NAND2-equivalent gates for the design is then 8757 gates. This is a large amount for such a simple design, but the area overhead percentage of the design will shrink with larger designs. The area reported by synthesis is just an estimate, as layout can add optimizations to the design.
 \section{Layout}
-Layout is performed using the netlist from synthesis. After layout, it is possible to view the layout of the chip in a GUI-tool. The image in \cref{fig:layoutcircuit} shows the actual layout of the chip. The vertical yellow lines is power distribution to the teal horizontal lines, each purple boxes is a library cell, and the teal squares along the edges, marked \textit{I} or \textit{O}, are input and output ports of the chip. 
+Layout is performed using the netlist from synthesis. After layout, it is possible to view the layout of the chip in a GUI-tool by opening the \textit{icc\_shell} and calling \verb!start_gui!. The image in \cref{fig:layoutcircuit} shows the actual layout of the chip. This image is included only for illustration, details are not important. The vertical yellow lines is power distribution to the teal horizontal lines, each purple box is a library cell, and the teal squares along the edges, marked \textit{I} or \textit{O}, are input and output ports of the chip. 
 \begin{figure}[hbpt]
 \centering
 \includegraphics[width=0.99\textwidth]{../figs/LayoutCircuit.png}
 \caption{\label{fig:layoutcircuit}Chip-layout of example design}
 \end{figure}
-Layout generates the final reports of area and critical path length. The reported values are listed in \cref{tab:layoutreportex}. Notice that the total area is reduced compared to the synthesis reports, while the critical path has increased a bit, leading to a decreased maximum frequency. The parameters \textit{Net XLength} and \textit{Net YLength} is the physical dimensions of the chip, given in $nm$. This corresponds to a physical area of 1.102 $x10^3~mm^2$
+Layout generates the final reports of area and critical path length. The reported values are listed in \cref{tab:layoutreportex}. Notice that the total area is reduced compared to the synthesis reports, while the critical path has increased a bit, leading to a decreased maximum frequency. The parameters \textit{Net XLength} and \textit{Net YLength} is the physical dimensions of the chip, given in $nm$. This corresponds to a physical area of 1102 $\mu m^2$.
 
 \begin{table}[hbpt]
     \centering
@@ -387,14 +387,14 @@ Layout generates the final reports of area and critical path length. The reporte
 \end{table}
 
 \section{Power analysis}
-Power analysis uses switching data from the VCD- and SAIF-file generated under simulation to estimate the power consumption. As there are five different power scenarios defined, five results for each parameter is reported. The reporting from power analysis is shown in \cref{tab:powestreportex}. In this simple example, all power scenarios report the same power consumption. In a larger design, these values will vary. With a total estimated power consumption of 179.6$\mu$W, not much power is consumed in this chip, but again it is a small design.
+Power analysis use switching data from the \gls{vcd}-file generated under simulation to estimate the power consumption. There are five different power scenarios defined in the tool-flow, each generating a result for each power-parameter. The reporting from power analysis is shown in \cref{tab:powestreportex}. In this simple example, all power scenarios report the same power consumption. In a larger design, these values will vary. With a total estimated power consumption of 179.6$\mu$W, not much power is consumed in this chip, but again it is a small design.
 
 \begin{table}[hbpt]
     \centering
     \begin{tabular}{lrccccc}
-         & & \multicolumn{5}{c}{\textbf{Test \#}} \\
+         & & \multicolumn{5}{c}{\textbf{Power scenario}} \\
         \cline{3-7}
-        \textbf{Parameter} &  & \textbf{crtl0} & \textbf{crtl1} & \textbf{crtl2} & \textbf{crtl3} & \textbf{inactive} \\
+        \textbf{Parameter} &  & \textbf{ctrl0} & \textbf{ctrl1} & \textbf{ctrl2} & \textbf{ctrl3} & \textbf{inactive} \\
         \toprule
         Net Switching & [$\mu$W] & 27,33 & 27,33 & 27,33 & 27,33 & 27,33 \\
         Cell Internal & [$\mu$W] & 152,2 & 152,2 & 152,2 & 152,2 & 152,2 \\
