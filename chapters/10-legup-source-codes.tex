@@ -236,12 +236,58 @@ if (LEGUP_CONFIG->getParameterInt("ASIC_IMPLEMENTATION")) {
 }
 \end{lstlisting}
 \clearpage
+\section{\label{sec:newprojectsourcecode}Script for creating new framework-project}
+\lstset{language=[gnu] make, style=Cstyle, morestring=[s]""}
+\begin{lstlisting}
+#!/bin/bash
+
+echo "Type the name of the new design, followed by [ENTER]:"
+read DESIGNNAME
+
+LEVEL=$(pwd)
+mkdir $DESIGNNAME
+mkdir $DESIGNNAME/ip
+mkdir $DESIGNNAME/ip/$DESIGNNAME
+cp -r _source/methodology $DESIGNNAME
+cp -r _source/ip/libs $DESIGNNAME/ip
+cp -r _source/ip/designname/* $DESIGNNAME/ip/$DESIGNNAME
+cd $DESIGNNAME/ip/$DESIGNNAME
+mv designname.c $DESIGNNAME.c
+mv rtl/designname.fl rtl/$DESIGNNAME.fl
+mv rtl/designname_sim.fl rtl/$DESIGNNAME\_sim.fl
+mv sim/tb/test_designname.fl sim/tb/test_$DESIGNNAME.fl
+mv sim/tb/test_designname_testcases.v sim/tb/test_$DESIGNNAME\_testcases.v
+mv sim/tb/test_designname.v sim/tb/test_$DESIGNNAME.v
+mv sim/run/designname.args sim/run/$DESIGNNAME.args
+mv sim/run/designname.comp sim/run/$DESIGNNAME.comp
+mv sim/run/designname.sim sim/run/$DESIGNNAME.sim
+mv syn/dc_scripts/designname.constraints.tcl syn/dc_scripts/$DESIGNNAME.constraints.tcl
+
+find FrameworkScript.sh -type f -exec sed -i "s/DESIGNNAME=designname/DESIGNNAME=$DESIGNNAME/g" {} \;
+find FrameworkScript.sh -type f -exec sed -i "s?basedir?$LEVEL?g" {} \;
+find Makefile -type f -exec sed -i "s?basedir?$LEVEL?g" {} \;
+find Makefile -type f -exec sed -i "s/designname/$DESIGNNAME/g" {} \;
+
+find rtl/$DESIGNNAME.fl -type f -exec sed -i "s/designname/$DESIGNNAME/g" {} \;
+find rtl/$DESIGNNAME\_sim.fl -type f -exec sed -i "s/designname/$DESIGNNAME/g" {} \;
+find sim/tb/test_$DESIGNNAME.fl -type f -exec sed -i "s/designname/$DESIGNNAME/g" {} \;
+
+find sim/run/$DESIGNNAME.args -type f -exec sed -i "s/designname/$DESIGNNAME/g" {} \;
+find sim/run/$DESIGNNAME.comp -type f -exec sed -i "s/designname/$DESIGNNAME/g" {} \;
+find sim/run/$DESIGNNAME.sim -type f -exec sed -i "s/designname/$DESIGNNAME/g" {} \;
+find sim/run/$DESIGNNAME.sim -type f -exec sed -i "s?basedir?$LEVEL?g" {} \;
+find sim/run/RUN_ALL -type f -exec sed -i "s/designname/$DESIGNNAME/g" {} \;
+
+find syn/common_setup.tcl -type f -exec sed -i "s/designname/$DESIGNNAME/g" {} \;
+find syn/dc_scripts/dc_compile.tcl -type f -exec sed -i "s?basedir?$LEVEL?g" {} \;
+\end{lstlisting}
+\clearpage
 \section{\label{sec:hlsscriptsourcecode}Script for running framework}
 \lstset{language=[gnu] make, style=Cstyle, morestring=[s]""}
 \begin{lstlisting}[caption={HLS Script source code},label=lst:hlsscriptsourcecode]
 #!/bin/bash
-rm -f HLSscript.log
-LOG_FILE=HLSscript.log
+rm -f FrameworkScript.log
+LOG_FILE=FrameworkScript.log
 exec 3>&1 1>>${LOG_FILE} 2>&1 # Print log to file, print specified echos to terminal
 
 DESIGNNAME=designname

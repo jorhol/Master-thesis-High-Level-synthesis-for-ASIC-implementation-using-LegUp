@@ -159,7 +159,7 @@ The RTLOp class is a subclass of the RTLSignal class, representing an operation 
 \subsubsection{RTLWidth}
 The RTLWidth class represents the bitwidth of a RTLSignal. An RTLWidth is defined by high and low bits, for instance 31,0 for a 32 bit signal. This will transform into "\verb![31:0]!" in Verilog.
 \subsubsection{RAM}
-The RAM class models RAM modules in LegUp. Whenever a variable is loaded or stored, a RAM module is generated to handle the loads and stores. The RAM objects can be divided into two scopes; LOCAL and GLOBAL. A Local RAM object is local to a given function and cannot be accessed from other functions. A global RAM object will be implemented in a global memory controller. All modules that use the variable can connect to the RAM via the memory controller. Some important member-functions are:
+The RAM class models RAM modules in LegUp. Whenever a variable is loaded or stored, a RAM module is generated to handle the loads and stores. The RAM objects can be divided into two scopes; LOCAL and GLOBAL. A local RAM object is local to a given function and cannot be accessed by other functions. A global RAM object will be implemented in a global memory controller. All modules that use the variable can connect to the RAM via the memory controller. Some important member-functions are:
 \begin{compactdesc}
     \item[getName()] \hfill \\
     Returns a string containing the name of the RAM module, i.e. "main\_0\_1" for the RAM module generated for the first parameter to the main function declared as volatile (output parameters) in the C-code.
@@ -171,7 +171,7 @@ The RAM class models RAM modules in LegUp. Whenever a variable is loaded or stor
 
 
 \subsection{\label{subsec:legupconstraintstheory}Constraints}
-Constraints is an important part of LegUp, and it is also used extensively in this project. The constraints are used for setting design goals and limitations on design, and to specify how the \gls{hls}-flow will be executed. Constraints play an important role in this concept, as the idea is to generate multiple designs that can be compared in terms of area, speed, and power consumption. For the designs to be different, varying constraints are used for generating the designs. All available constraints are described in the constraint manual \cite{legupconst}, but the ones used in this project are described in \cref{tab:constraintssescription}. Some constraints are considered \textit{required}. These constraints must be set for the generated design to be compatible with the tool-flow. \textit{\gls{hls} constraints} are used for getting different Verilog-outputs from LegUp. Other constraints from the constraint manual can be also be used, but these were selected for this project as their description indicate that they can affect the architecture of the output.
+Constraints is an important part of LegUp, and it is also used extensively in this project. The constraints are used for setting design goals and limitations on design, and to specify how the \gls{hls}-flow will be executed. Constraints play an important role in this concept, as the idea is to generate multiple designs that can be compared in terms of area, performance, and power consumption. For the designs to be different, varying constraints are used for generating the designs. All available constraints are described in the constraint manual \cite{legupconst}, but the ones used in this project are described in \cref{tab:constraintssescription}. Some constraints are considered \textit{required}. These constraints must be set for the generated design to be compatible with the tool-flow. \textit{\gls{hls} constraints} are used for getting different Verilog-outputs from LegUp. Other constraints from the constraint manual can also be used, but these were selected for this project as their description indicate that they can affect the architecture of the output.
 \begin{table}[hbtp]
     \centering
     \begin{tabular}{l|p{6.4cm}|c}
@@ -208,7 +208,7 @@ Constraints is an important part of LegUp, and it is also used extensively in th
     \specialcelll{\small{DUAL\_PORT\_}\\\small{BINDING}} & \multicolumn{2}{p{8cm}}{Use dual-ported on-chip memories} \\
     \bottomrule
     \end{tabular}
-    \caption{Descriptions of constraints used in this project}
+    \caption{Description of constraints used in this project}
     \label{tab:constraintssescription}
 \end{table}
 
@@ -270,7 +270,7 @@ Power analysis is performed to get an early indication on how much power the fin
 
 \section{Reference design}
 \label{sec:refdes}
-This thesis will look into whether or not LegUp can be used as the \gls{hls}-tool in a framework for architectural exploration of hardware. In order to get some output from LegUp that can be compared towards each other, a reference design must be created. The design will be used in the proof of concept, described in \cref{chp:frameworkresults}, and should be something that can be implemented both in C and Verilog, and it should be simple to implement and verify. In \cite{holm2015pro}, two reference designs were implemented; a FIR-filter and a SAP-1 architecture. The FIR-filter will be used as the reference design in this project, as this is a regular structure that easily can be implemented and verified. The SAP-1 architecture would have been a interesting second reference design, as it consists of a \gls{fsm}, just like the output from LegUp. Unfortunately, this architecture has too many design-parts that will be incompatible with the framework. It will therefore be left out of this thesis.
+This thesis will look into whether or not LegUp can be used as the \gls{hls}-tool in a framework for architectural exploration of hardware. In order to get some output from LegUp that can be compared towards each other, a reference design must be created. The design will be used in the proof of concept, described in \cref{chp:frameworkresults}, and should be something that can be implemented both in C and Verilog. The design should also be simple to implement and verify. In \cite{holm2015pro}, two reference designs were implemented; a FIR-filter and a SAP-1 architecture. The FIR-filter will be used as the reference design in this project, as this is a regular structure that easily can be implemented and verified. The SAP-1 architecture would have been a interesting second reference design, as it consists of a \gls{fsm}, just like the output from LegUp. Unfortunately, this architecture has too many design-parts that will be incompatible with the framework. It has therefore been decided to leave this design out of this thesis.
 
 \subsection{\label{subsec:refdesfir}FIR-filter}
 \gls{fir}-filters are together with \gls{iir}-filters, the two categories of linear time-invariant systems, used in digital signal processing application. The impulse response of a \gls{fir}-filter is zero outside some finite time interval. 
@@ -302,7 +302,7 @@ From \cref{eq:firfilterdiff} and \cref{eq:firfilterimp} we get the discrete conv
     \label{eq:firfilterconv}
 \end{equation}
 \noindent
-Figure \ref{fig:firfilter} shows the direct form representation of a N-order \gls{fir}-filter with $N+1$ taps. The figure shows that a FIR-filter requires $N$ memory elements, $N+1$ adders and \textit{N} multipliers. 
+Figure \ref{fig:firfilter} shows the direct form representation of a N-order \gls{fir}-filter with $N+1$ taps. The figure shows that a FIR-filter requires $N$ memory elements, \textit{N} adders and $N+1$ multipliers. 
 \begin{figure}[hbpt]
 \centering
 \includegraphics[width=\textwidth]{../figs/FIRFilter.png}
